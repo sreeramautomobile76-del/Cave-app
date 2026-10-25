@@ -26,8 +26,8 @@ body.order-entry-active .nav{display:none!important}
 .logo{font-size:34px;font-weight:800;letter-spacing:2px}
 .sub{opacity:.8;margin-top:4px}
 .content{padding:18px}
-.card{background:white;border:1px solid #e2e8f0;border-radius:18px;padding:18px;margin-bottom:14px;box-shadow:0 4px 18px rgba(0,0,0,0.03);transition:transform 0.15s ease, opacity 0.3s ease}
-.card:active{transform:scale(0.99)}
+.card{background:white;border:1px solid #e2e8f0;border-radius:18px;padding:18px;margin-bottom:14px;box-shadow:0 4px 18px rgba(0,0,0,0.03);transition:none}
+.card:active{transform:none}
 .card.completed-faded{opacity:0.55;background:#f8fafc}
 h1,h2,h3{margin-top:0}
 .muted{color:#71809a}
@@ -66,11 +66,11 @@ input:focus,select:focus,textarea:focus{border-color:#1670e8}
 .items-box{margin:8px 0 14px}
 .order-card-click{cursor:pointer;user-select:none;-webkit-user-select:none}
 
-.item-check-row{display:flex;align-items:center;justify-content:space-between;padding:12px 8px;border-bottom:1px solid #f0f4f9;transition:all 0.3s ease;user-select:none;-webkit-user-select:none;border-radius:8px}
+.item-check-row{display:flex;align-items:center;justify-content:space-between;padding:12px 8px;border-bottom:1px solid #f0f4f9;transition:background 0.15s ease;user-select:none;-webkit-user-select:none;border-radius:8px}
 .item-check-row.selected-item{background:#e6f0ff !important;border:1px solid #1670e8}
 .item-check-row.delete-mode-item{background:#fff5f5 !important;border:1px solid #ee5d50}
 .item-check-row:last-child{border-bottom:none}
-.item-check-row.animating-out{opacity:0;transform:translateY(12px);background:#f0f7ff}
+.item-check-row.animating-out{background:#f0f7ff}
 .circle-btn{width:26px;height:26px;border-radius:50%;border:2px solid #a0aec0;display:inline-grid;place-items:center;margin-right:12px;flex-shrink:0;transition:all 0.2s;font-size:12px;font-weight:bold;cursor:pointer}
 .circle-btn.checked{background:#1670e8;border-color:#1670e8;color:white}
 .item-left{display:flex;align-items:center;font-weight:600;font-size:14px;color:#2d3748}
@@ -113,6 +113,7 @@ input:focus,select:focus,textarea:focus{border-color:#1670e8}
 .menu-item:last-child{border-bottom:none}
 .menu-item:active{background:#f0f5ff}
 
+#page{overflow-anchor:none}
 @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 .modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:1000;animation:fadeIn 0.2s}
 .modal{background:white;padding:20px;border-radius:20px;width:90%;max-width:400px}
@@ -815,6 +816,10 @@ function handleCaveSystemBack(){
       pageOrders(document.getElementById('nav-orders'));
       return;
     }
+    if(currentScreen === 'orderDetail'){
+      pageOrders(document.getElementById('nav-orders'));
+      return;
+    }
     if(currentScreen !== 'home'){
       pageHome(document.getElementById('nav-home'));
       return;
@@ -895,7 +900,39 @@ function active(btn){
 
 let currentOrderTab = "all";
 
+function ensureDailyPendingOrders(){
+  const b=current(); if(!b || !Array.isArray(b.orders)) return false;
+  const today=getTodayIsoString(); let changed=false;
+  const latestByLineage=new Map();
+  (b.orders||[]).forEach(o=>{
+    if(!o || o.deleted) return;
+    const d=o.isoDate || orderLocalIso(o); if(!d || d>=today) return;
+    (o.items||[]).forEach(it=>{
+      if(!it) return;
+      const lineage=it.originItemId || it.id || (String(it.name||'')+'|'+String(it.unit||'PCS'));
+      const key=String(o.customer||'').toUpperCase()+'|'+lineage;
+      const prev=latestByLineage.get(key);
+      if(!prev || prev.date<d || (prev.date===d && (prev.order.updatedAt||0)<(o.updatedAt||0))) latestByLineage.set(key,{order:o,item:it,date:d});
+    });
+  });
+  const bySource=new Map();
+  latestByLineage.forEach(({order,item})=>{
+    if(item.completed || item.noStock || order.closedManually || order.lastRolloverDate===today) return;
+    const key=order.id; if(!bySource.has(key)) bySource.set(key,{order,items:[]}); bySource.get(key).items.push(item);
+  });
+  bySource.forEach(({order,items})=>{
+    if(!items.length) return;
+    const exists=b.orders.some(x=>x && x.rolloverSourceId===order.id && x.rolloverDate===today);
+    if(exists){order.lastRolloverDate=today;changed=true;return;}
+    const now=new Date();
+    const newOrder={id:'ROL_'+_h(order.id+'|'+today),customer:order.customer,items:items.map(it=>({id:'ITM_'+_h(order.id+'|'+today+'|'+it.id),originItemId:it.originItemId||it.id,name:it.name,qty:it.qty||1,unit:it.unit||'PCS',completed:false,ordered:false,noStock:false,rolloverFromOrderId:order.id})),deletedItems:[],notes:'AUTO-CARRIED PENDING & ORDERED ITEMS FROM '+(order.dateOnly||order.isoDate||''),orderBy:order.orderBy||'CAVE SYSTEM',pickerName:'',adoptedBy:'',closedManually:false,unseenCount:items.length,time:now.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}),dateOnly:now.toLocaleDateString([], {day:'2-digit',month:'short',year:'numeric'}),isoDate:today,date:now.toLocaleString(),rolloverSourceId:order.id,rolloverDate:today};
+    b.orders.push(newOrder); order.lastRolloverDate=today; changed=true;
+  });
+  if(changed) save(); return changed;
+}
+
 function pageOrders(btn){
+  ensureDailyPendingOrders();
   orderEntryActive = false;
   document.body.classList.remove("order-entry-active");
   currentScreen = "orders";
@@ -1394,6 +1431,8 @@ let selectedItemsSet = new Set();
 let lastLongPressSelectionAt = 0;
 
 function openOrderDetail(orderId){
+  window.activeOrderDetailId = orderId;
+  currentScreen = 'orderDetail';
   vibrate(20);
   document.getElementById("header-area").innerHTML = "";
   selectedItemsSet.clear();
@@ -1916,7 +1955,10 @@ function triggerItemStatus(orderId, itemId, rowElement){
           item.pickedBy = "";
         }
         save(); 
+        var keepY = window.pageYOffset || document.documentElement.scrollTop || 0;
         openOrderDetail(orderId);
+        window.scrollTo(0, keepY);
+        requestAnimationFrame(function(){ window.scrollTo(0, keepY); });
       }
     }, 350);
   }, 500);
