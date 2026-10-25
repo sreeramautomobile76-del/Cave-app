@@ -1143,11 +1143,12 @@ function renderOrdersList(filteredList){
     var dateStr = o.dateOnly || (o.date ? o.date.split(',')[0]||'' : '');
 
     let items = o.items || [];
-    let pendingCount = items.filter(function(x){ return !x.completed && !x.ordered; }).length;
-    let orderedCount = items.filter(function(x){ return x.ordered && !x.completed; }).length;
+    let pendingCount = items.filter(function(x){ return !x.completed && !x.ordered && !x.noStock; }).length;
+    let orderedCount = items.filter(function(x){ return x.ordered && !x.completed && !x.noStock; }).length;
+    let noStockCount = items.filter(function(x){ return x.noStock && !x.completed; }).length;
     let completedCount = items.filter(function(x){ return x.completed; }).length;
 
-    let isCompleted = (items.length > 0 && completedCount === items.length) || o.closedManually;
+    let isCompleted = (items.length > 0 && (completedCount + noStockCount === items.length)) || o.closedManually;
     let unseenCount = o.unseenCount || 0;
 
     html += '<div class="card order-card-click ' + (isCompleted ? 'completed-faded' : '') + '" id="orderCard-' + esc(o.id) + '" onclick="openOrderDetail(\'' + esc(o.id) + '\')">' +
@@ -1158,6 +1159,7 @@ function renderOrdersList(filteredList){
             (pendingCount ? '<span class="bar-pill" style="background:#fff3dc;color:#b7791f">⏳' + pendingCount + '</span>' : '') +
             (orderedCount ? '<span class="bar-pill" style="background:#fefcbf;color:#744210">📦' + orderedCount + '</span>' : '') +
             (completedCount ? '<span class="bar-pill" style="background:#e6fffa;color:#234e52">✅' + completedCount + '</span>' : '') +
+            (noStockCount ? '<span class="bar-pill" style="background:#fff5f5;color:#c53030">🚫' + noStockCount + '</span>' : '') +
           '</div>' +
         '</div>' +
         '<div class="small muted" style="margin-top:4px">By: ' + esc(o.orderBy||b.owner||"Owner") + '</div>' +
@@ -1410,8 +1412,9 @@ function openOrderDetail(orderId){
   let items = o.items || [];
   items.forEach(it => { if(it && !it.id) it.id = genId("ITM"); });
 
-  let pendingItems = items.filter(function(i){ return i && !i.completed && !i.ordered; });
-  let orderedItems = items.filter(function(i){ return i && i.ordered && !i.completed; });
+  let noStockItems = items.filter(function(i){ return i && i.noStock && !i.completed; });
+  let pendingItems = items.filter(function(i){ return i && !i.completed && !i.ordered && !i.noStock; });
+  let orderedItems = items.filter(function(i){ return i && i.ordered && !i.completed && !i.noStock; });
   let completedItems = items.filter(function(i){ return i && i.completed; });
 
   var pendingHtml = pendingItems.length ? pendingItems.map(function(item){
@@ -1423,6 +1426,10 @@ function openOrderDetail(orderId){
     let circleAction = 'onclick="handleCircleClick(\'' + esc(o.id) + '\', \'' + esc(item.id) + '\', this, event)"';
     return '<div class="item-check-row" id="row-' + esc(item.id) + '" style="background:#fffdf5"><div class="item-left"><span class="circle-btn" style="border-color:#d69e2e;color:#d69e2e;font-size:10px;line-height:22px;text-align:center" ' + circleAction + '>📦</span><span>' + esc(item.name) + '</span></div><span class="item-qty-tag" style="color:#b7791f">' + (item.qty || 1) + ' ' + esc(item.unit || 'PCS') + '</span></div>';
   }).join('') : '<div style="padding:12px;color:#71809a;font-size:13px">No ordered items</div>';
+
+  var noStockHtml = noStockItems.length ? noStockItems.map(function(item){
+    return '<div class="item-check-row" id="row-' + esc(item.id) + '"><div class="item-left"><span class="circle-btn" style="border-color:#e53e3e;color:#e53e3e;font-size:10px;line-height:22px;text-align:center" onclick="toggleNoStockItem(\'' + esc(o.id) + '\', \'' + esc(item.id) + '\')">×</span><span>' + esc(item.name) + '</span></div><span class="item-qty-tag">' + (item.qty || 1) + ' ' + esc(item.unit || 'PCS') + '</span></div>';
+  }).join('') : '<div style="padding:12px;color:#71809a;font-size:13px">No items marked No Stock</div>';
 
   var completedHtml = completedItems.length ? completedItems.map(function(item){
     let circleAction = 'onclick="handleCircleClick(\'' + esc(o.id) + '\', \'' + esc(item.id) + '\', this, event)"';
@@ -1445,6 +1452,7 @@ function openOrderDetail(orderId){
         '<div id="selectionActions" style="display:none;gap:6px">' +
           '<button class="btn secondary" style="margin:0;padding:6px 10px;width:auto;font-size:12px" onclick="copySelectedItems(\'' + esc(o.id) + '\')">📋 Copy (<span id="selCount">0</span>)</button>' +
           '<button class="btn" style="margin:0;padding:6px 10px;width:auto;font-size:12px;background:#d69e2e" onclick="markSelectedAsOrdered(\'' + esc(o.id) + '\')">📦 Mark Ordered</button>' +
+          '<button class="btn danger" style="margin:0;padding:6px 10px;width:auto;font-size:12px" onclick="markSelectedNoStock(\'' + esc(o.id) + '\')">🚫 No Stock</button>' +
         '</div>' +
         '<div id="deleteItemsActionHeader" style="display:none;gap:6px">' +
           '<button class="btn danger" style="margin:0;padding:6px 12px;width:auto;font-size:12px" onclick="confirmDeleteSelectedItems(\'' + esc(o.id) + '\')">🗑 Delete Selected (<span id="delSelCount">0</span>)</button>' +
@@ -1464,6 +1472,7 @@ function openOrderDetail(orderId){
 
       '<div class="section-title">⏳ Pending Items</div><div class="card" style="padding:4px 14px; margin-bottom:14px">' + pendingHtml + '</div>' +
       '<div class="section-title" style="color:#b7791f">📦 Ordered / On The Way</div><div class="card" style="padding:4px 14px; margin-bottom:14px; border-color:#fefcbf">' + orderedHtml + '</div>' +
+      '<div class="section-title" style="color:#c53030">🚫 No Stock</div><div class="card" style="padding:4px 14px;margin-bottom:14px;border-color:#fed7d7">' + noStockHtml + '</div>' +
       '<div class="section-title">✅ Completed Items</div><div class="card" style="padding:4px 14px">' + completedHtml + '</div>' +
       '<button class="btn" style="margin-top:16px" onclick="savePickerAndBack(\'' + esc(o.id) + '\')">Save</button>' +
       '<button class="btn success" style="margin-top:8px" onclick="shareWhatsApp(\'' + esc(o.id) + '\')">💬 Share on WhatsApp App</button>' +
@@ -1632,7 +1641,9 @@ function addItemsToExistingOrderModal(orderId){
   modal.innerHTML =
     '<div class="modal">' +
       '<h3>Add Items to Order</h3>' +
-      '<p class="muted small">Press Enter on Qty to add new row continuously:</p>' +
+      '<p class="muted small">Type items manually or paste a copied list. Last number on each line is quantity.</p>' +
+      '<textarea id="addItemsPasteBox" rows="3" placeholder="Paste list here, one item per line e.g. SPLENDOR VISOR 5" style="margin:4px 0 8px;font-size:13px"></textarea>' +
+      '<button class="btn secondary" style="margin:0 0 8px" onclick="parseAddItemsPaste()">📋 Paste / Import List</button>' +
       '<div id="modalItemBox" class="items-box"></div>' +
       '<button class="btn secondary" onclick="addModalItemRow(true)">+ Add Item Row</button>' +
       '<div style="display:flex;gap:10px;margin-top:12px">' +
@@ -1669,6 +1680,18 @@ function addItemsToExistingOrderModal(orderId){
     modal.remove();
     openOrderDetail(orderId);
   };
+}
+
+function parseAddItemsPaste(){
+  const area=document.getElementById('addItemsPasteBox'); const box=document.getElementById('modalItemBox'); if(!area||!box) return;
+  const raw=area.value.trim(); if(!raw){alert('Paste copied item list first.');return;}
+  const lines=raw.split(/\r?\n|;/).map(x=>x.replace(/^\s*(?:[*•–-]+\s*|\d{1,3}[.)]\s+)/,'').trim()).filter(Boolean);
+  let added=0; lines.forEach(line=>{ let name=line,qty=1,unit='PCS';
+    let m=line.match(/\s+[x×]\s*(\d+)$/i) || line.match(/\s+(\d+)\s*(PCS|PC|PKT|ITEMS|BOX|SET|NOS|KG)?$/i);
+    if(m){ qty=parseInt(m[1],10)||1; if(m[2] && !/^x$/i.test(m[2])) unit=m[2].toUpperCase(); name=line.slice(0,m.index).trim(); }
+    if(name){ const row=document.createElement('div'); row.className='item-row'; row.innerHTML='<input class="item-name uppercase-input" placeholder="Item name" value="'+esc(name.toUpperCase())+'"><input class="item-qty" type="text" inputmode="numeric" value="'+qty+'"><input class="item-unit uppercase-input" placeholder="Unit" value="'+esc(unit)+'"><button class="remove-item" type="button">×</button>'; box.appendChild(row); const remove=row.querySelector('.remove-item'); remove.onclick=()=>row.remove(); added++; }
+  });
+  if(added) { area.value=''; showToast(added+' item rows imported'); } else alert('No valid items found.');
 }
 
 function addModalItemRow(focusNew){
@@ -1844,7 +1867,7 @@ function markSelectedAsOrdered(orderId){
   selectedItemsSet.forEach(function(itemId){
     let item = o.items.find(it => it && it.id === itemId);
     if(item){
-      item.ordered = true;
+      item.ordered = true; item.noStock = false; item.completed = false;
     }
   });
   save();
@@ -1852,11 +1875,24 @@ function markSelectedAsOrdered(orderId){
   openOrderDetail(orderId);
 }
 
+function markSelectedNoStock(orderId){
+  vibrate(30);
+  const b=current(); const o=b && b.orders.find(x=>x && x.id===orderId); if(!o) return;
+  selectedItemsSet.forEach(function(itemId){ const item=(o.items||[]).find(it=>it && it.id===itemId); if(item){ item.noStock=true; item.ordered=false; item.completed=false; item.pickedBy=''; item.noStockAt=Date.now(); } });
+  save(); selectedItemsSet.clear(); openOrderDetail(orderId); showToast('Selected items marked NO STOCK');
+}
+function toggleNoStockItem(orderId,itemId){
+  const b=current(); const o=b && b.orders.find(x=>x && x.id===orderId); const item=o && (o.items||[]).find(it=>it && it.id===itemId); if(!item) return;
+  item.noStock=!item.noStock; if(item.noStock){item.ordered=false;item.completed=false;item.noStockAt=Date.now();} save(); openOrderDetail(orderId);
+}
+
 function triggerItemStatus(orderId, itemId, rowElement){
   vibrate(30);
   let b = current();
   let o = b.orders.find(x => x && x.id === orderId);
   if(!o) return;
+  const existingItem = (o.items || []).find(it => it && it.id === itemId);
+  if(existingItem && existingItem.noStock){ existingItem.noStock=false; existingItem.ordered=false; existingItem.completed=false; save(); openOrderDetail(orderId); showToast('Item returned to Pending'); return; }
 
   if(!rowElement || rowElement.dataset.animating === "true") return;
   rowElement.dataset.animating = "true";
