@@ -114,6 +114,9 @@ input:focus,select:focus,textarea:focus{border-color:#1670e8}
 .menu-item:active{background:#f0f5ff}
 
 #page{overflow-anchor:none}
+#stickyCust{position:fixed;top:0;left:0;right:0;margin:0 auto;max-width:480px;z-index:60;height:calc(env(safe-area-inset-top,0px) + 44px);background:rgba(255,255,255,.97);border-bottom:1px solid #e2e8f0;box-shadow:0 3px 10px rgba(0,0,0,.07);opacity:0;pointer-events:none}
+#stickyCustTxt{position:fixed;top:0;left:0;z-index:61;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transform-origin:left top;opacity:0;pointer-events:none;font-weight:800;color:#1b2559;will-change:transform}
+#app.orders-fullscreen #stickyCust{max-width:none}
 @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 .modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:1000;animation:fadeIn 0.2s}
 .modal{background:white;padding:20px;border-radius:20px;width:90%;max-width:400px}
@@ -1478,8 +1481,38 @@ document.addEventListener("visibilitychange", function(){
   } catch(e){}
 });
 
+
+/* Order detail: iOS-style large title. The customer name shrinks and glides into the centre of a top bar while scrolling. */
+function updateStickyCust(){
+  var bar = document.getElementById("stickyCust"), ttl = document.getElementById("custTitle"), tx = document.getElementById("stickyCustTxt");
+  if(!bar || !ttl || !tx) return;
+  var cs = getComputedStyle(ttl), F0 = parseFloat(cs.fontSize) || 24, FIN = 18, sF = FIN / F0;
+  tx.style.fontSize = F0 + "px"; tx.style.fontFamily = cs.fontFamily; tx.style.lineHeight = cs.lineHeight;
+  var r = ttl.getBoundingClientRect(), br = bar.getBoundingClientRect();
+  var safe = Math.max(0, bar.offsetHeight - 44), lh = tx.offsetHeight || F0 * 1.2;
+  var tY = safe + (44 - lh * sF) / 2;
+  var p = Math.max(0, Math.min(1, 1 - (r.top - tY) / 70));
+  var s = 1 + (sF - 1) * p;
+  var maxW = Math.max(60, br.width - 110);
+  var natW = tx.scrollWidth || r.width;
+  var finalX = br.left + br.width / 2 - Math.min(natW * sF, maxW) / 2;
+  var x = r.left + (finalX - r.left) * p;
+  var y = Math.max(r.top, tY);
+  var scaledMax = r.width + (maxW - r.width) * p;
+  tx.style.maxWidth = (scaledMax / s) + "px";
+  tx.style.transform = "translate(" + x.toFixed(1) + "px," + y.toFixed(1) + "px) scale(" + s.toFixed(4) + ")";
+  var on = p > 0.001;
+  tx.style.opacity = on ? 1 : 0;
+  ttl.style.visibility = on ? "hidden" : "visible";
+  bar.style.opacity = p;
+  bar.style.pointerEvents = p > 0.95 ? "auto" : "none";
+}
+window.addEventListener("scroll", updateStickyCust, { passive: true });
+window.addEventListener("resize", updateStickyCust);
+
 function openOrderDetail(orderId){
   setTimeout(function(){ startOrderPresence(orderId); }, 0);
+  setTimeout(function(){ try{ updateStickyCust(); }catch(e){} }, 0);
   window.activeOrderDetailId = orderId;
   currentScreen = 'orderDetail';
   vibrate(20);
@@ -1535,6 +1568,7 @@ function openOrderDetail(orderId){
 
   document.getElementById("page").innerHTML =
     '<div id="orderViewers"></div>' +
+    '<div id="stickyCust" onclick="window.scrollTo({top:0,behavior:\'smooth\'})"></div><div id="stickyCustTxt">' + customerDisplay + '</div>' +
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;gap:6px">' +
       '<button class="back-btn" onclick="pageOrders(document.getElementById(\'nav-orders\'))">← Back</button>' +
       '<div style="display:flex;align-items:center;gap:6px">' +
@@ -1553,7 +1587,7 @@ function openOrderDetail(orderId){
       '</div>' +
     '</div>' +
     '<div class="card">' +
-      '<div style="display:flex;justify-content:space-between;align-items:flex-start"><div><h2 style="margin:0">' + customerDisplay + '</h2><div class="small muted" style="margin-top:2px">Order By: ' + esc(o.orderBy||b.owner||"Owner") + '</div></div><div class="small muted" style="text-align:right">' + esc(o.dateOnly||'') + '</div></div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start"><div><h2 id="custTitle" style="margin:0">' + customerDisplay + '</h2><div class="small muted" style="margin-top:2px">Order By: ' + esc(o.orderBy||b.owner||"Owner") + '</div></div><div class="small muted" style="text-align:right">' + esc(o.dateOnly||'') + '</div></div>' +
       adoptBtnHtml +
       '<input id="pickerName" class="uppercase-input" value="' + esc(o.pickerName||'') + '" placeholder="Enter name of person picking parts..." style="margin-top:14px" onchange="updatePicker(\'' + esc(o.id) + '\', this.value)">' +
       
@@ -2008,6 +2042,7 @@ function triggerItemStatus(orderId, itemId, rowElement){
         var keepY = window.pageYOffset || document.documentElement.scrollTop || 0;
         openOrderDetail(orderId);
         window.scrollTo(0, keepY);
+        try{ updateStickyCust(); }catch(e){}
         requestAnimationFrame(function(){ window.scrollTo(0, keepY); });
       }
     }, 350);
