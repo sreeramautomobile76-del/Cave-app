@@ -886,6 +886,7 @@ function pageHome(btn){
 }
 
 function active(btn){
+  try{ stopOrderPresence(); }catch(e){}
   vibrate(15);
   const appRoot = document.getElementById("app");
   if(appRoot) {
@@ -1429,7 +1430,56 @@ function filterOrders(){
 let selectedItemsSet = new Set();
 let lastLongPressSelectionAt = 0;
 
+/* ===== Live viewers: shows which workers have the same order open (stored outside the business node so it never triggers re-renders) ===== */
+var presenceOrderId = null, presenceRef = null, presenceListRef = null, presenceTimer = null, presenceViewers = {};
+var presenceClientId = (function(){ try { var k = sessionStorage.getItem("CAVE_PRESENCE_ID"); if(!k){ k = "c" + Math.random().toString(36).slice(2, 10); sessionStorage.setItem("CAVE_PRESENCE_ID", k); } return k; } catch(e){ return "c" + Math.random().toString(36).slice(2, 10); } })();
+function renderOrderViewers(){
+  var el = document.getElementById("orderViewers");
+  if(!el) return;
+  var now = Date.now(), names = [];
+  Object.keys(presenceViewers || {}).forEach(function(k){
+    var v = presenceViewers[k];
+    if(!v || k === presenceClientId) return;
+    if(now - (Number(v.ts) || 0) > 180000) return;
+    var n = String(v.name || "Member");
+    if(names.indexOf(n) === -1) names.push(n);
+  });
+  if(!names.length){ el.innerHTML = ""; return; }
+  el.innerHTML = '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:10px;padding:8px 10px;background:#e8f7ee;border:1px solid #b7e4c7;border-radius:12px;font-size:12px;color:#1b6b3a;font-weight:700"><span>👀 Viewing now:</span>' +
+    names.map(function(n){ return '<span style="background:#fff;border:1px solid #b7e4c7;border-radius:999px;padding:2px 9px">🟢 ' + esc(n) + '</span>'; }).join("") + '</div>';
+}
+function stopOrderPresence(){
+  try { if(presenceListRef) presenceListRef.off(); } catch(e){}
+  try { if(presenceRef) presenceRef.remove(); } catch(e){}
+  if(presenceTimer){ clearInterval(presenceTimer); presenceTimer = null; }
+  presenceRef = null; presenceListRef = null; presenceOrderId = null; presenceViewers = {};
+}
+function startOrderPresence(orderId){
+  try {
+    if(!hasFB || !data.currentBusiness) return;
+    if(presenceOrderId === orderId && presenceRef){ renderOrderViewers(); return; }
+    stopOrderPresence();
+    presenceOrderId = orderId;
+    var base = "presence/" + data.currentBusiness + "/" + orderId;
+    var myName = data.currentUser || "Member";
+    presenceRef = db.ref(base + "/" + presenceClientId);
+    var announce = function(){ try { presenceRef.set({ name: myName, ts: Date.now() }); } catch(e){} };
+    try { presenceRef.onDisconnect().remove(); } catch(e){}
+    announce();
+    presenceTimer = setInterval(announce, 60000);
+    presenceListRef = db.ref(base);
+    presenceListRef.on("value", function(s){ presenceViewers = s.val() || {}; renderOrderViewers(); }, function(){});
+  } catch(e){}
+}
+document.addEventListener("visibilitychange", function(){
+  try {
+    if(document.hidden){ if(presenceRef) presenceRef.remove(); }
+    else if(presenceOrderId && presenceRef){ presenceRef.set({ name: data.currentUser || "Member", ts: Date.now() }); }
+  } catch(e){}
+});
+
 function openOrderDetail(orderId){
+  setTimeout(function(){ startOrderPresence(orderId); }, 0);
   window.activeOrderDetailId = orderId;
   currentScreen = 'orderDetail';
   vibrate(20);
@@ -1484,6 +1534,7 @@ function openOrderDetail(orderId){
   let customerDisplay = (o.customer && o.customer !== "undefined") ? esc(o.customer) : "UNKNOWN CUSTOMER";
 
   document.getElementById("page").innerHTML =
+    '<div id="orderViewers"></div>' +
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;gap:6px">' +
       '<button class="back-btn" onclick="pageOrders(document.getElementById(\'nav-orders\'))">← Back</button>' +
       '<div style="display:flex;align-items:center;gap:6px">' +
@@ -1973,7 +2024,7 @@ function savePickerAndBack(orderId){
   pageOrders(document.getElementById("nav-orders")); 
 }
 
-// WhatsApp share: no emojis. Order = Completed, then Pending, then Ordered.
+// WhatsApp share: no emojis. Order = Completed, then Pending (incl. ordered), then No Stock.
 function shareWhatsApp(orderId){
   vibrate(20);
   let o = current().orders.find(x => x && x.id === orderId);
@@ -1983,17 +2034,16 @@ function shareWhatsApp(orderId){
     return "- " + (x.name || "") + " - " + (x.qty || 1) + " " + (x.unit || "PCS") + (extra || "");
   };
   let done = items.filter(x => x.completed);
-  let pend = items.filter(x => !x.completed && !x.ordered);
-  let ord = items.filter(x => x.ordered && !x.completed);
+  let nost = items.filter(x => x.noStock && !x.completed);
+  let pend = items.filter(x => !x.completed && !x.noStock);
 
   let parts = [];
-  if(done.length) parts.push("*Completed*\n" + done.map(x => line(x, x.pickedBy ? " (Picked by " + x.pickedBy + ")" : "")).join("\n"));
+  if(done.length) parts.push("*Completed*\n" + done.map(x => line(x)).join("\n"));
   if(pend.length) parts.push("*Pending*\n" + pend.map(x => line(x)).join("\n"));
-  if(ord.length) parts.push("*Ordered*\n" + ord.map(x => line(x)).join("\n"));
+  if(nost.length) parts.push("*No Stock*\n" + nost.map(x => line(x)).join("\n"));
 
   let cust = (o.customer && o.customer !== "undefined") ? o.customer : "Order";
   let text = "*Order Details - " + current().name + "*\n*Customer:* " + cust + "\n" +
-    (o.pickerName ? "*Picked By:* " + o.pickerName + "\n" : "") +
     "\n" + parts.join("\n\n") +
     (o.notes ? "\n\n*Notes:* " + o.notes : "") +
     "\n\nThank you!";
