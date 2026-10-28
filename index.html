@@ -457,6 +457,7 @@ function listenToFirebase(){
       // Firebase can receive updates from another device at any moment; rebuilding
       // the page here used to kick the user out of Create New Order.
       if(orderEntryActive || currentScreen === "newOrder") return;
+      if(currentScreen === "orderDetail" && window.activeOrderDetailId){ refreshOrderDetailLive(); return; }
 
       let activeTab = document.querySelector(".nav button.active");
       if(activeTab){
@@ -1437,12 +1438,15 @@ let selectedItemsSet = new Set();
 let lastLongPressSelectionAt = 0;
 
 /* ===== Live viewers: shows which workers have the same order open (stored outside the business node so it never triggers re-renders) ===== */
+var adoptListRef = null;
 var presenceOrderId = null, presenceRef = null, presenceListRef = null, presenceTimer = null, presenceViewers = {};
 var presenceClientId = (function(){ try { var k = sessionStorage.getItem("CAVE_PRESENCE_ID"); if(!k){ k = "c" + Math.random().toString(36).slice(2, 10); sessionStorage.setItem("CAVE_PRESENCE_ID", k); } return k; } catch(e){ return "c" + Math.random().toString(36).slice(2, 10); } })();
+function presenceTs(){ try { return firebase.database.ServerValue.TIMESTAMP; } catch(e){ return Date.now(); } }
+try { if(typeof hasFB !== "undefined" && hasFB){ db.ref(".info/serverTimeOffset").on("value", function(s){ window.__fbOffset = Number(s.val()) || 0; }); } } catch(e){}
 function renderOrderViewers(){
   var el = document.getElementById("orderViewers"), sv = document.getElementById("stickyViewers");
   if(!el) return;
-  var now = Date.now(), names = [];
+  var now = Date.now() + (window.__fbOffset || 0), names = [];
   Object.keys(presenceViewers || {}).forEach(function(k){
     var v = presenceViewers[k];
     if(!v || k === presenceClientId) return;
@@ -1458,6 +1462,9 @@ function renderOrderViewers(){
 }
 function stopOrderPresence(){
   try { if(presenceListRef) presenceListRef.off(); } catch(e){}
+  try { if(adoptListRef) adoptListRef.off(); } catch(e){}
+  stopLiveListen();
+  adoptListRef = null;
   try { if(presenceRef) presenceRef.remove(); } catch(e){}
   if(presenceTimer){ clearInterval(presenceTimer); presenceTimer = null; }
   presenceRef = null; presenceListRef = null; presenceOrderId = null; presenceViewers = {};
@@ -1471,18 +1478,32 @@ function startOrderPresence(orderId){
     var base = "presence/" + data.currentBusiness + "/" + orderId;
     var myName = data.currentUser || "Member";
     presenceRef = db.ref(base + "/" + presenceClientId);
-    var announce = function(){ try { presenceRef.set({ name: myName, ts: Date.now() }); } catch(e){} };
-    try { presenceRef.onDisconnect().remove(); } catch(e){}
-    announce();
-    presenceTimer = setInterval(announce, 60000);
+    var announce = function(){ try { presenceRef.set({ name: myName, ts: presenceTs() }); } catch(e){} };
     presenceListRef = db.ref(base);
     presenceListRef.on("value", function(s){ presenceViewers = s.val() || {}; renderOrderViewers(); }, function(){});
+    startLiveListen(orderId);
+    adoptListRef = db.ref("adopt/" + data.currentBusiness + "/" + orderId);
+    adoptListRef.on("value", function(s){
+      try {
+        var v = s.val();
+        if(!v || !v.name) return;
+        var b = current(), o = b && (b.orders || []).find(function(x){ return x && x.id === orderId; });
+        if(o && !o.adoptedBy){
+          o.adoptedBy = v.name;
+          try { localStorage.setItem(KEY, JSON.stringify(data)); } catch(e){}
+          refreshOrderDetailLive();
+        }
+      } catch(e){}
+    }, function(){});
+    announce();
+    try { presenceRef.onDisconnect().remove(); } catch(e){}
+    presenceTimer = setInterval(announce, 60000);
   } catch(e){}
 }
 document.addEventListener("visibilitychange", function(){
   try {
     if(document.hidden){ if(presenceRef) presenceRef.remove(); }
-    else if(presenceOrderId && presenceRef){ presenceRef.set({ name: data.currentUser || "Member", ts: Date.now() }); }
+    else if(presenceOrderId && presenceRef){ presenceRef.set({ name: data.currentUser || "Member", ts: presenceTs() }); }
   } catch(e){}
 });
 
@@ -1517,12 +1538,71 @@ function updateStickyCust(){
 window.addEventListener("scroll", updateStickyCust, { passive: true });
 window.addEventListener("resize", updateStickyCust);
 
+/* Fast path: item status changes (tick / ordered / no stock) are also sent as a tiny message, so the other phone updates in about a second instead of waiting for the full business sync. */
+var liveListRef = null;
+function livePush(orderId, items){
+  try {
+    if(!hasFB || !data.currentBusiness) return;
+    var upd = {}, ts = Date.now() + (window.__fbOffset || 0);
+    (items || []).forEach(function(it){
+      if(!it || !it.id) return;
+      upd[it.id] = { c: it.completed ? 1 : 0, o: it.ordered ? 1 : 0, n: it.noStock ? 1 : 0, p: it.pickedBy || "", ts: ts };
+    });
+    if(Object.keys(upd).length) db.ref("live/" + data.currentBusiness + "/" + orderId).update(upd);
+  } catch(e){}
+}
+function startLiveListen(orderId){
+  try {
+    if(liveListRef){ liveListRef.off(); liveListRef = null; }
+    if(!hasFB || !data.currentBusiness) return;
+    liveListRef = db.ref("live/" + data.currentBusiness + "/" + orderId);
+    liveListRef.on("value", function(s){
+      try {
+        var v = s.val(); if(!v) return;
+        var b = current(), o = b && (b.orders || []).find(function(x){ return x && x.id === orderId; });
+        if(!o) return;
+        var changed = false;
+        (o.items || []).forEach(function(it){
+          var e = it && v[it.id]; if(!e) return;
+          if(!(Number(e.ts) > (it.updatedAt || 0))) return;
+          var c = !!e.c, od = !!e.o, n = !!e.n, pk = e.p || "";
+          if(!!it.completed === c && !!it.ordered === od && !!it.noStock === n && (it.pickedBy || "") === pk) return;
+          it.completed = c; it.ordered = od; it.noStock = n; it.pickedBy = pk;
+          try { _snap[it.id] = _sig(it); } catch(x){}
+          changed = true;
+        });
+        if(changed){
+          try { localStorage.setItem(KEY, JSON.stringify(data)); } catch(e){}
+          refreshOrderDetailLive();
+        }
+      } catch(e){}
+    }, function(){});
+  } catch(e){}
+}
+function stopLiveListen(){ try { if(liveListRef) liveListRef.off(); } catch(e){} liveListRef = null; }
+function refreshOrderDetailLive(){
+  try{
+    var id = window.activeOrderDetailId, b = current();
+    var o = b && (b.orders || []).find(function(x){ return x && x.id === id; });
+    if(!o || o.deleted){ pageOrders(document.getElementById("nav-orders")); return; }
+    var sig = JSON.stringify(o);
+    if(sig === window.__detailSig) return;
+    if(selectedItemsSet.size || isDeleteItemsMode || document.querySelector(".modal-overlay") || document.querySelector(".animating-out")) return;
+    var ae = document.activeElement;
+    if(ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)) return;
+    var y = window.pageYOffset || document.documentElement.scrollTop || 0;
+    window.__silentOpen = true;
+    try { openOrderDetail(id); } finally { window.__silentOpen = false; }
+    window.scrollTo(0, y);
+    try{ updateStickyCust(); }catch(e){}
+  }catch(e){ window.__silentOpen = false; }
+}
 function openOrderDetail(orderId){
-  setTimeout(function(){ startOrderPresence(orderId); }, 0);
+  try{ startOrderPresence(orderId); }catch(e){}
   setTimeout(function(){ try{ updateStickyCust(); }catch(e){} }, 0);
   window.activeOrderDetailId = orderId;
   currentScreen = 'orderDetail';
-  vibrate(20);
+  if(!window.__silentOpen) vibrate(20);
   document.getElementById("header-area").innerHTML = "";
   selectedItemsSet.clear();
   isDeleteItemsMode = false;
@@ -1530,6 +1610,7 @@ function openOrderDetail(orderId){
 
   let b = current();
   let o = b.orders.find(x => x && x.id === orderId);
+  try{ window.__detailSig = JSON.stringify(o); }catch(e){}
   if(!o) { pageOrders(document.getElementById("nav-orders")); return; }
   
   if(o.unseenCount) {
@@ -1749,6 +1830,7 @@ function adoptOrder(orderId){
   if(!o) return;
   o.adoptedBy = userName;
   save();
+  try { if(hasFB) db.ref("adopt/" + b.id + "/" + orderId).set({ name: userName, ts: presenceTs() }); } catch(e){}
   pushTeamNotification(userName + " adopted order for " + ((o.customer && o.customer !== "undefined") ? o.customer : "Order"));
   openOrderDetail(orderId);
 }
@@ -2001,6 +2083,7 @@ function markSelectedAsOrdered(orderId){
       item.ordered = true; item.noStock = false; item.completed = false;
     }
   });
+  livePush(orderId, o.items.filter(function(it){ return it && selectedItemsSet.has(it.id); }));
   save();
   selectedItemsSet.clear();
   openOrderDetail(orderId);
@@ -2010,11 +2093,12 @@ function markSelectedNoStock(orderId){
   vibrate(30);
   const b=current(); const o=b && b.orders.find(x=>x && x.id===orderId); if(!o) return;
   selectedItemsSet.forEach(function(itemId){ const item=(o.items||[]).find(it=>it && it.id===itemId); if(item){ item.noStock=true; item.ordered=false; item.completed=false; item.pickedBy=''; item.noStockAt=Date.now(); } });
+  livePush(orderId, (o.items||[]).filter(function(it){ return it && selectedItemsSet.has(it.id); }));
   save(); selectedItemsSet.clear(); openOrderDetail(orderId); showToast('Selected items marked NO STOCK');
 }
 function toggleNoStockItem(orderId,itemId){
   const b=current(); const o=b && b.orders.find(x=>x && x.id===orderId); const item=o && (o.items||[]).find(it=>it && it.id===itemId); if(!item) return;
-  item.noStock=!item.noStock; if(item.noStock){item.ordered=false;item.completed=false;item.noStockAt=Date.now();} save(); openOrderDetail(orderId);
+  item.noStock=!item.noStock; if(item.noStock){item.ordered=false;item.completed=false;item.noStockAt=Date.now();} livePush(orderId,[item]); save(); openOrderDetail(orderId);
 }
 
 function triggerItemStatus(orderId, itemId, rowElement){
@@ -2023,7 +2107,7 @@ function triggerItemStatus(orderId, itemId, rowElement){
   let o = b.orders.find(x => x && x.id === orderId);
   if(!o) return;
   const existingItem = (o.items || []).find(it => it && it.id === itemId);
-  if(existingItem && existingItem.noStock){ existingItem.noStock=false; existingItem.ordered=false; existingItem.completed=false; save(); openOrderDetail(orderId); showToast('Item returned to Pending'); return; }
+  if(existingItem && existingItem.noStock){ existingItem.noStock=false; existingItem.ordered=false; existingItem.completed=false; livePush(orderId,[existingItem]); save(); openOrderDetail(orderId); showToast('Item returned to Pending'); return; }
 
   if(!rowElement || rowElement.dataset.animating === "true") return;
   rowElement.dataset.animating = "true";
@@ -2032,6 +2116,13 @@ function triggerItemStatus(orderId, itemId, rowElement){
   
   if(isCurrentlyCompleted){ circleBtn.classList.remove('checked'); circleBtn.innerHTML = ''; }
   else { circleBtn.classList.add('checked'); circleBtn.innerHTML = '✓'; }
+  try {
+    var _it = (o.items || []).find(function(it){ return it && it.id === itemId; });
+    if(_it){
+      var _me = getCurrentMember();
+      livePush(orderId, [{ id: _it.id, completed: !isCurrentlyCompleted, ordered: false, noStock: false, pickedBy: (!isCurrentlyCompleted ? (_me ? _me.name : (data.currentUser || "Member")) : "") }]);
+    }
+  } catch(e){}
   
   setTimeout(function(){
     rowElement.classList.add('animating-out');
