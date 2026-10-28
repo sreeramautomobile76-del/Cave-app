@@ -26,7 +26,7 @@ body.order-entry-active .nav{display:none!important}
 .logo{font-size:34px;font-weight:800;letter-spacing:2px}
 .sub{opacity:.8;margin-top:4px}
 .content{padding:18px}
-.card{background:white;border:1px solid #e2e8f0;border-radius:18px;padding:18px;margin-bottom:14px;box-shadow:0 4px 18px rgba(0,0,0,0.03);transition:none}
+.card{background:white;border:1px solid #e2e8f0;border-radius:18px;padding:18px;margin-bottom:14px;box-shadow:0 4px 18px rgba(0,0,0,0.03);transition:opacity 0.3s ease}
 .card:active{transform:none}
 .card.completed-faded{opacity:0.55;background:#f8fafc}
 h1,h2,h3{margin-top:0}
@@ -66,15 +66,13 @@ input:focus,select:focus,textarea:focus{border-color:#1670e8}
 .items-box{margin:8px 0 14px}
 .order-card-click{cursor:pointer;user-select:none;-webkit-user-select:none}
 
-.item-check-row{display:flex;align-items:center;justify-content:space-between;padding:12px 8px;border-bottom:1px solid #f0f4f9;transition:opacity 0.8s ease,transform 0.8s ease,background 0.3s ease;user-select:none;-webkit-user-select:none;border-radius:8px}
+.item-check-row{display:flex;align-items:center;justify-content:space-between;padding:12px 8px;border-bottom:1px solid #f0f4f9;transition:all 0.3s ease;user-select:none;-webkit-user-select:none;border-radius:8px}
 .item-check-row.selected-item{background:#e6f0ff !important;border:1px solid #1670e8}
 .item-check-row.delete-mode-item{background:#fff5f5 !important;border:1px solid #ee5d50}
 .item-check-row:last-child{border-bottom:none}
 .item-check-row.animating-out{opacity:0;transform:translateY(12px);background:#f0f7ff}
 .circle-btn{width:26px;height:26px;border-radius:50%;border:2px solid #a0aec0;display:inline-grid;place-items:center;margin-right:12px;flex-shrink:0;transition:all 0.2s;font-size:12px;font-weight:bold;cursor:pointer}
 .circle-btn.checked{background:#1670e8;border-color:#1670e8;color:white}
-@keyframes tickPop{0%{transform:scale(.6)}60%{transform:scale(1.2)}100%{transform:scale(1)}}
-.circle-btn.checked{animation:tickPop .35s ease}
 .item-left{display:flex;align-items:center;font-weight:600;font-size:14px;color:#2d3748}
 .item-picked-tag{font-size:10px;color:#25d366;font-weight:bold;margin-top:2px}
 .item-qty-tag{font-size:13px;color:#71809a;font-weight:600}
@@ -1465,7 +1463,6 @@ function renderOrderViewers(){
 function stopOrderPresence(){
   try { if(presenceListRef) presenceListRef.off(); } catch(e){}
   try { if(adoptListRef) adoptListRef.off(); } catch(e){}
-  stopLiveListen();
   adoptListRef = null;
   try { if(presenceRef) presenceRef.remove(); } catch(e){}
   if(presenceTimer){ clearInterval(presenceTimer); presenceTimer = null; }
@@ -1483,7 +1480,6 @@ function startOrderPresence(orderId){
     var announce = function(){ try { presenceRef.set({ name: myName, ts: presenceTs() }); } catch(e){} };
     presenceListRef = db.ref(base);
     presenceListRef.on("value", function(s){ presenceViewers = s.val() || {}; renderOrderViewers(); }, function(){});
-    startLiveListen(orderId);
     adoptListRef = db.ref("adopt/" + data.currentBusiness + "/" + orderId);
     adoptListRef.on("value", function(s){
       try {
@@ -1540,48 +1536,6 @@ function updateStickyCust(){
 window.addEventListener("scroll", updateStickyCust, { passive: true });
 window.addEventListener("resize", updateStickyCust);
 
-/* Fast path: item status changes (tick / ordered / no stock) are also sent as a tiny message, so the other phone updates in about a second instead of waiting for the full business sync. */
-var liveListRef = null;
-function livePush(orderId, items){
-  try {
-    if(!hasFB || !data.currentBusiness) return;
-    var upd = {}, ts = Date.now() + (window.__fbOffset || 0);
-    (items || []).forEach(function(it){
-      if(!it || !it.id) return;
-      upd[it.id] = { c: it.completed ? 1 : 0, o: it.ordered ? 1 : 0, n: it.noStock ? 1 : 0, p: it.pickedBy || "", ts: ts };
-    });
-    if(Object.keys(upd).length) db.ref("live/" + data.currentBusiness + "/" + orderId).update(upd);
-  } catch(e){}
-}
-function startLiveListen(orderId){
-  try {
-    if(liveListRef){ liveListRef.off(); liveListRef = null; }
-    if(!hasFB || !data.currentBusiness) return;
-    liveListRef = db.ref("live/" + data.currentBusiness + "/" + orderId);
-    liveListRef.on("value", function(s){
-      try {
-        var v = s.val(); if(!v) return;
-        var b = current(), o = b && (b.orders || []).find(function(x){ return x && x.id === orderId; });
-        if(!o) return;
-        var changed = false;
-        (o.items || []).forEach(function(it){
-          var e = it && v[it.id]; if(!e) return;
-          if(!(Number(e.ts) > (it.updatedAt || 0))) return;
-          var c = !!e.c, od = !!e.o, n = !!e.n, pk = e.p || "";
-          if(!!it.completed === c && !!it.ordered === od && !!it.noStock === n && (it.pickedBy || "") === pk) return;
-          it.completed = c; it.ordered = od; it.noStock = n; it.pickedBy = pk;
-          try { _snap[it.id] = _sig(it); } catch(x){}
-          changed = true;
-        });
-        if(changed){
-          try { localStorage.setItem(KEY, JSON.stringify(data)); } catch(e){}
-          refreshOrderDetailLive();
-        }
-      } catch(e){}
-    }, function(){});
-  } catch(e){}
-}
-function stopLiveListen(){ try { if(liveListRef) liveListRef.off(); } catch(e){} liveListRef = null; }
 function refreshOrderDetailLive(){
   try{
     var id = window.activeOrderDetailId, b = current();
@@ -2085,7 +2039,6 @@ function markSelectedAsOrdered(orderId){
       item.ordered = true; item.noStock = false; item.completed = false;
     }
   });
-  livePush(orderId, o.items.filter(function(it){ return it && selectedItemsSet.has(it.id); }));
   save();
   selectedItemsSet.clear();
   openOrderDetail(orderId);
@@ -2095,12 +2048,11 @@ function markSelectedNoStock(orderId){
   vibrate(30);
   const b=current(); const o=b && b.orders.find(x=>x && x.id===orderId); if(!o) return;
   selectedItemsSet.forEach(function(itemId){ const item=(o.items||[]).find(it=>it && it.id===itemId); if(item){ item.noStock=true; item.ordered=false; item.completed=false; item.pickedBy=''; item.noStockAt=Date.now(); } });
-  livePush(orderId, (o.items||[]).filter(function(it){ return it && selectedItemsSet.has(it.id); }));
   save(); selectedItemsSet.clear(); openOrderDetail(orderId); showToast('Selected items marked NO STOCK');
 }
 function toggleNoStockItem(orderId,itemId){
   const b=current(); const o=b && b.orders.find(x=>x && x.id===orderId); const item=o && (o.items||[]).find(it=>it && it.id===itemId); if(!item) return;
-  item.noStock=!item.noStock; if(item.noStock){item.ordered=false;item.completed=false;item.noStockAt=Date.now();} livePush(orderId,[item]); save(); openOrderDetail(orderId);
+  item.noStock=!item.noStock; if(item.noStock){item.ordered=false;item.completed=false;item.noStockAt=Date.now();} save(); openOrderDetail(orderId);
 }
 
 function triggerItemStatus(orderId, itemId, rowElement){
@@ -2109,7 +2061,7 @@ function triggerItemStatus(orderId, itemId, rowElement){
   let o = b.orders.find(x => x && x.id === orderId);
   if(!o) return;
   const existingItem = (o.items || []).find(it => it && it.id === itemId);
-  if(existingItem && existingItem.noStock){ existingItem.noStock=false; existingItem.ordered=false; existingItem.completed=false; livePush(orderId,[existingItem]); save(); openOrderDetail(orderId); showToast('Item returned to Pending'); return; }
+  if(existingItem && existingItem.noStock){ existingItem.noStock=false; existingItem.ordered=false; existingItem.completed=false; save(); openOrderDetail(orderId); showToast('Item returned to Pending'); return; }
 
   if(!rowElement || rowElement.dataset.animating === "true") return;
   rowElement.dataset.animating = "true";
@@ -2118,13 +2070,6 @@ function triggerItemStatus(orderId, itemId, rowElement){
   
   if(isCurrentlyCompleted){ circleBtn.classList.remove('checked'); circleBtn.innerHTML = ''; }
   else { circleBtn.classList.add('checked'); circleBtn.innerHTML = '✓'; }
-  try {
-    var _it = (o.items || []).find(function(it){ return it && it.id === itemId; });
-    if(_it){
-      var _me = getCurrentMember();
-      livePush(orderId, [{ id: _it.id, completed: !isCurrentlyCompleted, ordered: false, noStock: false, pickedBy: (!isCurrentlyCompleted ? (_me ? _me.name : (data.currentUser || "Member")) : "") }]);
-    }
-  } catch(e){}
   
   setTimeout(function(){
     rowElement.classList.add('animating-out');
@@ -2146,8 +2091,8 @@ function triggerItemStatus(orderId, itemId, rowElement){
         try{ updateStickyCust(); }catch(e){}
         requestAnimationFrame(function(){ window.scrollTo(0, keepY); });
       }
-    }, 800);
-  }, 200);
+    }, 350);
+  }, 500);
 }
 
 function updatePicker(orderId, name){ 
