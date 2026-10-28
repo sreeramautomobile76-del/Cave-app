@@ -1,6 +1,6 @@
 /* CAVE service worker: lets the app open with no internet.
    Change CACHE name (v1 -> v2) whenever you upload a new index.html. */
-var CACHE = "cave-cache-v3";
+var CACHE = "cave-cache-v4";
 var CORE = ["./", "index.html", "manifest.json", "icon-192.png", "icon-512.png", "icon-maskable-192.png", "icon-maskable-512.png"];
 var FB_HOST = "www.gstatic.com";
 var FB_SCRIPTS = [
