@@ -114,6 +114,19 @@ input:focus,select:focus,textarea:focus{border-color:#1670e8}
 .menu-item:active{background:#f0f5ff}
 
 #page{overflow-anchor:none}
+#selectionActions{position:fixed;top:0;left:0;right:0;margin:0 auto;max-width:480px;z-index:70;padding:calc(env(safe-area-inset-top,0px) + 8px) 10px 8px;background:#fff;border-bottom:1px solid #e2e8f0;box-shadow:0 3px 12px rgba(0,0,0,.12);justify-content:center;flex-wrap:wrap;gap:6px}
+#app.orders-fullscreen #selectionActions{max-width:none}
+.order-card-click{position:relative}
+.packed-stamp{position:absolute;pointer-events:none;z-index:3;text-align:center;font-weight:900;letter-spacing:3px;color:#1f8a3b;border:3px solid #1f8a3b;border-radius:8px;padding:3px 12px 2px;transform:rotate(-13deg);opacity:.88;background:rgba(255,255,255,.35);box-shadow:inset 0 0 0 2px rgba(31,138,59,.35);line-height:1.1;mix-blend-mode:multiply}
+.packed-stamp b{display:block;font-size:20px}
+.packed-stamp small{display:block;font-size:9px;letter-spacing:.5px;font-weight:700;margin-top:1px;text-transform:uppercase}
+.packed-stamp.lg{top:46px;right:12px}
+.packed-stamp.sm{top:50%;left:50%;right:auto;transform:translate(-50%,-50%) rotate(-13deg);padding:3px 16px 2px;border-width:3px}
+.packed-stamp.sm b{font-size:22px;letter-spacing:4px}
+.packed-stamp.pop{animation:stampIn .45s cubic-bezier(.2,1.4,.4,1) both}
+.packed-stamp.sm.pop{animation:stampInC .45s cubic-bezier(.2,1.4,.4,1) both}
+@keyframes stampInC{0%{transform:translate(-50%,-50%) rotate(-13deg) scale(2.4);opacity:0}60%{opacity:1}100%{transform:translate(-50%,-50%) rotate(-13deg) scale(1);opacity:.88}}
+@keyframes stampIn{0%{transform:rotate(-13deg) scale(2.4);opacity:0}60%{opacity:1}100%{transform:rotate(-13deg) scale(1);opacity:.88}}
 .item-comment{margin-top:3px;font-size:12px;font-weight:500;color:#4a5568;background:#f1f5f9;border-left:3px solid #1670e8;border-radius:6px;padding:3px 7px;white-space:pre-wrap;overflow-wrap:anywhere}
 .item-comment span{color:#718096;font-size:10.5px;font-weight:600}
 .modal.add-items-modal{display:flex;flex-direction:column;max-height:88dvh;overflow:hidden}
@@ -1202,6 +1215,7 @@ function renderOrdersList(filteredList){
     let unseenCount = o.unseenCount || 0;
 
     html += '<div class="card order-card-click ' + (isCompleted ? 'completed-faded' : '') + '" id="orderCard-' + esc(o.id) + '" onclick="openOrderDetail(\'' + esc(o.id) + '\')">' +
+      packedStampHtml(o, "sm") +
       '<div style="display:flex;justify-content:space-between;align-items:flex-start"><div>' +
         '<div style="display:flex;align-items:center"><b style="font-size:17px">' + customerName + '</b>' +
           (unseenCount > 0 ? '<span class="unread-badge">' + unseenCount + '</span>' : '') +
@@ -1297,6 +1311,7 @@ function showOrderOptionsModal(orderId){
       '<button class="btn secondary" style="margin-top:0" id="optOpenBtn">📋 Select / View Details</button>' +
       '<button class="btn secondary" style="margin-top:8px" id="optEditBtn">✏ Edit Order</button>' +
       '<button class="btn secondary" style="margin-top:8px" id="optAddItemsBtn">➕ Add Items</button>' +
+      (canDelete ? '<button class="btn secondary" style="margin-top:8px;color:#1f8a3b;border-color:#1f8a3b" id="optPackBtn">' + (o.packed ? '↩ Remove Packed Mark' : '📦 Mark as Packed') + '</button>' : '') +
       '<button class="btn warning" style="margin-top:8px" id="optCloseBtn">🔒 Force Close Order</button>' +
       (canDelete ? '<button class="btn danger" style="margin-top:8px" id="optDelBtn">🗑 Delete Order</button>' : '') +
       '<button class="btn" style="margin-top:12px;background:#71809a" onclick="this.closest(\'.modal-overlay\').remove()">Cancel</button>' +
@@ -1307,6 +1322,9 @@ function showOrderOptionsModal(orderId){
   document.getElementById("optEditBtn").onclick = () => { modal.remove(); editOrderModal(orderId); };
   document.getElementById("optAddItemsBtn").onclick = () => { modal.remove(); addItemsToExistingOrderModal(orderId); };
   document.getElementById("optCloseBtn").onclick = () => { modal.remove(); forceCloseOrder(orderId); };
+  if(document.getElementById("optPackBtn")){
+    document.getElementById("optPackBtn").onclick = () => { modal.remove(); togglePacked(orderId, true); };
+  }
   if(document.getElementById("optDelBtn")){
     document.getElementById("optDelBtn").onclick = () => { modal.remove(); deleteOrder(orderId); };
   }
@@ -1624,9 +1642,11 @@ function openOrderDetail(orderId){
       '<button class="back-btn" onclick="pageOrders(document.getElementById(\'nav-orders\'))">← Back</button>' +
       '<div style="display:flex;align-items:center;gap:6px">' +
         '<div id="selectionActions" style="display:none;gap:6px">' +
+          '<button class="btn secondary" style="margin:0;padding:6px 10px;width:auto;font-size:12px" onclick="clearItemSelection()" aria-label="Clear selection">✕</button>' +
           '<button class="btn secondary" style="margin:0;padding:6px 10px;width:auto;font-size:12px" onclick="copySelectedItems(\'' + esc(o.id) + '\')">📋 Copy (<span id="selCount">0</span>)</button>' +
           '<button class="btn" style="margin:0;padding:6px 10px;width:auto;font-size:12px;background:#d69e2e" onclick="markSelectedAsOrdered(\'' + esc(o.id) + '\')">📦 Mark Ordered</button>' +
           '<button class="btn danger" style="margin:0;padding:6px 10px;width:auto;font-size:12px" onclick="markSelectedNoStock(\'' + esc(o.id) + '\')">🚫 No Stock</button>' +
+          '<button class="btn secondary" style="margin:0;padding:6px 10px;width:auto;font-size:12px" onclick="openCommentModal(\'' + esc(o.id) + '\')">💬 Comment</button>' +
         '</div>' +
         '<div id="deleteItemsActionHeader" style="display:none;gap:6px">' +
           '<button class="btn danger" style="margin:0;padding:6px 12px;width:auto;font-size:12px" onclick="confirmDeleteSelectedItems(\'' + esc(o.id) + '\')">🗑 Delete Selected (<span id="delSelCount">0</span>)</button>' +
@@ -1637,7 +1657,8 @@ function openOrderDetail(orderId){
         '</div>' +
       '</div>' +
     '</div>' +
-    '<div class="card">' +
+    '<div class="card" style="position:relative">' +
+      packedStampHtml(o, "lg") +
       '<div style="display:flex;justify-content:space-between;align-items:flex-start"><div><h2 id="custTitle" style="margin:0">' + customerDisplay + '</h2><div class="small muted" style="margin-top:2px">Order By: ' + esc(o.orderBy||b.owner||"Owner") + '</div></div><div class="small muted" style="text-align:right">' + esc(o.dateOnly||'') + '</div></div>' +
       adoptBtnHtml +
       '<input id="pickerName" class="uppercase-input" value="' + esc(o.pickerName||'') + '" placeholder="Enter name of person picking parts..." style="margin-top:14px" onchange="updatePicker(\'' + esc(o.id) + '\', this.value)">' +
@@ -1654,6 +1675,50 @@ function openOrderDetail(orderId){
     '</div>';
 
   setupLongPressEvents(o.id);
+}
+
+function canPackOrder(){
+  var me = getCurrentMember();
+  return !!(me && (me.isAdmin || me.isCreator || me.role === "Owner" || me.role === "Administrator" || me.role === "Admin"));
+}
+
+function packedStampHtml(o, size){
+  if(!o || !o.packed) return "";
+  var pop = (window.__stampPopId && window.__stampPopId === o.id) ? " pop" : "";
+  if(pop && size === "lg") window.__stampPopId = null;
+  var d = "";
+  try { if(o.packedAt){ d = new Date(o.packedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" }); } } catch(e){}
+  var sub = size === "lg" ? ((o.packedBy ? esc(o.packedBy) : "") + (d ? (o.packedBy ? " \u00B7 " : "") + esc(d) : "")) : "";
+  return '<div class="packed-stamp ' + size + pop + '"><b>PACKED</b>' + (sub ? '<small>' + sub + '</small>' : '') + '</div>';
+}
+
+function togglePacked(orderId, fromList){
+  if(!canPackOrder()){ showToast("Sirf Owner ya Admin packed mark laga ya hata sakta hai"); return; }
+  var b = current(), o = b.orders.find(function(x){ return x && x.id === orderId; });
+  if(!o) return;
+  var cust = (o.customer && o.customer !== "undefined") ? o.customer : "Order";
+  var me = getCurrentMember();
+  var who = (me && me.name) || data.currentUser || "Owner";
+  if(o.packed){
+    confirmAction("Remove Packed mark?", "Is order se PACKED ka stamp hata diya jayega.", function(){
+      var b2 = current(), o2 = b2.orders.find(function(x){ return x && x.id === orderId; });
+      if(!o2 || !canPackOrder()) return;
+      delete o2.packed; delete o2.packedBy; delete o2.packedAt;
+      save();
+      pushTeamNotification(who + " removed the PACKED mark from " + cust + " order.");
+      if(fromList) filterOrders(); else openOrderDetail(orderId);
+    });
+  } else {
+    confirmAction("Mark order as PACKED?", "Order par PACKED ka stamp lag jayega. Sirf Owner ya Admin hata sakta hai.", function(){
+      var b2 = current(), o2 = b2.orders.find(function(x){ return x && x.id === orderId; });
+      if(!o2 || !canPackOrder()) return;
+      o2.packed = true; o2.packedBy = who; o2.packedAt = new Date().toISOString();
+      save();
+      pushTeamNotification(cust + " order was marked PACKED by " + who + ".");
+      window.__stampPopId = orderId;
+      if(fromList){ filterOrders(); setTimeout(function(){ window.__stampPopId = null; }, 800); } else openOrderDetail(orderId);
+    });
+  }
 }
 
 function commentHtml(item){
@@ -1718,6 +1783,7 @@ function toggleOrderDetailMenu(e, orderId) {
   menu.id = "orderDetailDropdownMenu";
   menu.className = "dropdown-menu";
   menu.innerHTML = 
+    (canPackOrder() ? '<div class="menu-item" style="color:#1f8a3b" onclick="togglePacked(\'' + esc(orderId) + '\'); closeOrderDetailMenu();">' + (((current().orders.find(function(x){ return x && x.id === orderId; }) || {}).packed) ? '↩ Remove Packed Mark' : '📦 Mark as Packed') + '</div>' : '') +
     (selectedItemsSet.size > 0 ? '<div class="menu-item" onclick="openCommentModal(\'' + esc(orderId) + '\')">💬 Comment (' + selectedItemsSet.size + ')</div>' : '') +
     '<div class="menu-item" style="color:#ee5d50" onclick="startDeleteItemsMode(\'' + esc(orderId) + '\'); closeOrderDetailMenu();">🗑️ Delete Items</div>' +
     '<div class="menu-item" onclick="showDeletedItemsModal(\'' + esc(orderId) + '\'); closeOrderDetailMenu();">👁 Show Deleted Items</div>';
@@ -2044,6 +2110,14 @@ function toggleDeleteItemSelection(itemId) {
   }
   const delSelCount = document.getElementById("delSelCount");
   if(delSelCount) delSelCount.innerText = itemsToDeleteSet.size;
+}
+
+function clearItemSelection(){
+  vibrate(15);
+  selectedItemsSet.forEach(function(id){ var r = document.getElementById("row-" + id); if(r) r.classList.remove("selected-item"); });
+  selectedItemsSet.clear();
+  var ab = document.getElementById("selectionActions");
+  if(ab) ab.style.display = "none";
 }
 
 function toggleSelection(itemId){
