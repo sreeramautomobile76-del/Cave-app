@@ -114,6 +114,34 @@ input:focus,select:focus,textarea:focus{border-color:#1670e8}
 .menu-item:active{background:#f0f5ff}
 
 #page{overflow-anchor:none}
+.act-bar{display:flex;align-items:center;gap:8px;margin:10px 0}
+.act-bar button{border:1px solid #e2e8f0;background:#fff;border-radius:12px;padding:8px 12px;font-size:14px;font-weight:700}
+.act-bar button:disabled{opacity:.35}
+.act-bar .act-date{flex:1;text-align:center;font-weight:800;color:#1b2559}
+.act-tabs{display:flex;gap:6px;margin-bottom:12px}
+.act-tab{flex:1;padding:9px 4px;border-radius:12px;border:1px solid #e2e8f0;background:#fff;font-size:13px;font-weight:700;color:#4a5568}
+.act-tab.on{background:#1670e8;border-color:#1670e8;color:#fff}
+.act-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.act-stat{padding:12px;border-radius:14px;background:#f1f5f9;text-align:center}
+.act-stat b{display:block;font-size:22px;color:#1b2559}
+.act-stat span{font-size:11px;color:#718096;font-weight:600}
+.act-worker{padding:12px;margin-bottom:10px;border:1px solid #e2e8f0;border-radius:14px;background:#fff}
+.act-chip{display:inline-block;margin:6px 6px 0 0;padding:3px 9px;border-radius:999px;background:#f1f5f9;font-size:12px;font-weight:700;color:#2d3748}
+.act-row{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid #edf2f7;font-size:13px}
+.act-row .act-time{flex-shrink:0;width:54px;color:#718096;font-weight:700;font-size:12px}
+.act-row .act-text{min-width:0;overflow-wrap:anywhere}
+.urgent-badge{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;background:#e53e3e;color:#fff;font-size:10.5px;font-weight:800;letter-spacing:.3px;vertical-align:middle}
+.item-check-row.urgent-row{border-left:4px solid #e53e3e;padding-left:8px;background:#fff8f8}
+.active-filter{display:inline-flex;align-items:center;gap:8px;margin:0 0 10px;padding:6px 6px 6px 12px;border-radius:999px;background:#e6f0ff;color:#1670e8;font-size:12.5px;font-weight:700}
+.active-filter button{border:0;background:#1670e8;color:#fff;border-radius:50%;width:22px;height:22px;font-size:12px;line-height:1;padding:0}
+.filter-chip-btn{display:block;width:100%;text-align:left;margin:0 0 8px;padding:12px 14px;border-radius:12px;border:1px solid #e2e8f0;background:#fff;font-size:14px;font-weight:600;color:#2d3748}
+.filter-chip-btn.on{background:#e6f0ff;border-color:#1670e8;color:#1670e8}
+.cust-link{border-bottom:1.5px dotted #1670e8;cursor:pointer}
+.hist-order{padding:10px 12px;margin-bottom:8px;border:1px solid #e2e8f0;border-radius:12px;background:#fff}
+.hist-stats{display:flex;gap:8px;margin:10px 0}
+.hist-stat{flex:1;text-align:center;padding:8px 4px;border-radius:12px;background:#f1f5f9}
+.hist-stat b{display:block;font-size:17px;color:#1b2559}
+.hist-stat span{font-size:10.5px;color:#718096;font-weight:600}
 .search-hits{margin-top:8px;border-top:1px dashed #e2e8f0;padding-top:6px}
 .search-hit{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;padding:4px 0;font-size:13px;color:#2d3748}
 .search-hit .hit-name{min-width:0;overflow-wrap:anywhere;font-weight:600}
@@ -915,6 +943,7 @@ function pageHome(btn){
       '<div class="tile" onclick="pageOrders(document.getElementById(\'nav-orders\'))"><b>📋 View Orders</b><span class="small muted">' + validOrdersCount + ' orders</span></div>' +
       '<div class="tile" onclick="pageTeam(document.getElementById(\'nav-team\'))"><b>👥 Team Members</b><span class="small muted">' + current().team.length + ' members</span></div>' +
       '<div class="tile" onclick="pageCustomers(document.getElementById(\'nav-customers\'))"><b>👤 Customers</b><span class="small muted">' + current().customers.length + ' customers</span></div>' +
+      (canPackOrder() ? '<div class="tile" onclick="pageActivity()"><b>📊 Activity & Reports</b><span class="small muted">Kaun kya kar raha hai</span></div>' : '') +
     '</div>';
 }
 
@@ -1012,6 +1041,7 @@ function toggleOrdersMenu(e){
   menu.id = "ordersDropdownMenu";
   menu.className = "dropdown-menu";
   menu.innerHTML = 
+    '<div class="menu-item" onclick="openOrderFilterModal()">🎯 Filter Orders' + (currentOrderFilter !== "all" ? ' ●' : '') + '</div>' +
     '<div class="menu-item" onclick="showTodaysSummaryModal(); closeOrdersMenu();">📊 Today\'s Items Summary</div>' +
     '<div class="menu-item" onclick="setTodayDateFilter(); closeOrdersMenu();">📅 Today\'s Orders</div>' +
     '<div class="menu-item" onclick="triggerDatePicker(); closeOrdersMenu();">📅 Select Date</div>' +
@@ -1188,6 +1218,122 @@ function setOrderTab(tabName, btnTarget) {
   filterOrders();
 }
 
+let currentOrderFilter = "all";
+var ORDER_FILTERS = [
+  ["all", "All orders"], ["urgent", "\uD83D\uDD34 Has urgent items"], ["packed", "\uD83D\uDCE6 Packed"], ["notpacked", "Not packed"],
+  ["haspending", "\u23F3 Has pending items"], ["hasordered", "\uD83D\uDCE6 Has ordered items"], ["hasnostock", "\uD83D\uDEAB Has no-stock items"], ["notadopted", "\u270B Not adopted yet"]
+];
+function orderMatchesFilter(o){
+  var f = currentOrderFilter, items = o.items || [];
+  if(f === "all") return true;
+  if(f === "urgent") return items.some(function(x){ return x && x.urgent && !x.completed && !x.noStock; });
+  if(f === "packed") return !!o.packed;
+  if(f === "notpacked") return !o.packed;
+  if(f === "haspending") return items.some(function(x){ return x && !x.completed && !x.ordered && !x.noStock; });
+  if(f === "hasordered") return items.some(function(x){ return x && x.ordered && !x.completed && !x.noStock; });
+  if(f === "hasnostock") return items.some(function(x){ return x && x.noStock && !x.completed; });
+  if(f === "notadopted") return !o.adoptedBy;
+  return true;
+}
+function setOrderFilter(f){
+  currentOrderFilter = f || "all";
+  document.getElementById("orderFilterModal")?.remove();
+  filterOrders();
+}
+function openOrderFilterModal(){
+  closeOrdersMenu();
+  var modal = document.createElement("div");
+  modal.className = "modal-overlay";
+  modal.id = "orderFilterModal";
+  modal.innerHTML = '<div class="modal" style="max-height:88dvh;overflow-y:auto"><h3 style="margin-bottom:12px">\uD83C\uDFAF Filter Orders</h3>' +
+    ORDER_FILTERS.map(function(x){ return '<button class="filter-chip-btn ' + (currentOrderFilter === x[0] ? 'on' : '') + '" onclick="setOrderFilter(\'' + x[0] + '\')">' + x[1] + '</button>'; }).join("") +
+    '<button class="btn" style="margin-top:6px;background:#71809a" onclick="this.closest(\'.modal-overlay\').remove()">Close</button></div>';
+  document.body.appendChild(modal);
+}
+function activeFilterPillHtml(){
+  if(currentOrderFilter === "all") return "";
+  var lbl = (ORDER_FILTERS.find(function(x){ return x[0] === currentOrderFilter; }) || [0, currentOrderFilter])[1];
+  return '<div class="active-filter">\uD83C\uDFAF ' + lbl + '<button onclick="setOrderFilter(\'all\')" aria-label="Clear filter">\u2715</button></div>';
+}
+
+function markSelectedUrgent(orderId){
+  var b = current(), o = b.orders.find(function(x){ return x && x.id === orderId; });
+  if(!o) return;
+  var sel = (o.items || []).filter(function(it){ return it && selectedItemsSet.has(it.id); });
+  if(!sel.length){ showToast("Pehle item press and hold karke select karo"); return; }
+  var me = getCurrentMember();
+  var who = (me && me.name) || data.currentUser || "Member";
+  var cust = (o.customer && o.customer !== "undefined") ? o.customer : "Order";
+  var allUrgent = sel.every(function(it){ return it.urgent; });
+  if(allUrgent){
+    sel.forEach(function(it){ delete it.urgent; delete it.urgentBy; logAct("urgent_off", o, it.name); });
+  } else {
+    sel.forEach(function(it){ it.urgent = true; it.urgentBy = who; logAct("urgent", o, it.name); });
+    pushTeamNotification("\uD83D\uDD34 URGENT: " + sel.length + " item" + (sel.length === 1 ? "" : "s") + " in " + cust + " order marked urgent by " + who + ".");
+  }
+  save();
+  vibrate(30);
+  selectedItemsSet.clear();
+  openOrderDetail(orderId);
+  showToast(allUrgent ? "Urgent mark removed" : "Marked urgent");
+}
+function urgentTag(item){ return (item && item.urgent && !item.completed) ? ' <span class="urgent-badge">URGENT</span>' : ''; }
+
+function it_u(o){ return (o.items || []).filter(function(x){ return x && x.urgent && !x.completed && !x.noStock; }).length; }
+function normCust(s){ return String(s || "").replace(/\s+/g, " ").trim().toUpperCase(); }
+function customerNameLink(o, display){
+  if(!o || !o.customer || o.customer === "undefined" || !normCust(o.customer)) return display;
+  return '<span class="cust-link" data-cust="' + esc(o.customer) + '" onclick="openCustomerHistory(this.getAttribute(\'data-cust\'))">' + display + '</span>';
+}
+function openCustomerHistory(name){
+  closeOrdersMenu();
+  var key = normCust(name);
+  if(!key) return;
+  var b = current();
+  var saved = (b.customers || []).find(function(c){ return c && normCust(c.name) === key; });
+  var orders = (b.orders || []).filter(function(o){ return o && !o.deleted && normCust(o.customer) === key; }).reverse();
+  var totalItems = 0, pendingItems = 0, itemCount = {};
+  orders.forEach(function(o){
+    (o.items || []).forEach(function(i){
+      if(!i) return;
+      totalItems++;
+      if(!i.completed && !i.noStock) pendingItems++;
+      var k = normCust(i.name); if(k) itemCount[k] = (itemCount[k] || 0) + 1;
+    });
+  });
+  var top = Object.keys(itemCount).sort(function(a, c){ return itemCount[c] - itemCount[a]; }).slice(0, 5)
+    .map(function(k){ return esc(k) + ' <b>\u00D7' + itemCount[k] + '</b>'; }).join(" \u00B7 ");
+  var last = orders[0] ? (orders[0].dateOnly || (orders[0].date ? orders[0].date.split(",")[0] : "")) : "-";
+  var info = saved
+    ? '<div class="small muted">' + (saved.phone ? '\uD83D\uDCDE <a href="tel:' + esc(saved.phone) + '">' + esc(saved.phone) + '</a> ' : '') + esc(saved.address || "") + '</div>'
+    : '<div class="small" style="margin-top:6px;padding:8px 10px;border-radius:10px;background:#fffaf0;border:1px solid #fbd38d;color:#744210">Ye customer <b>Customers list me save nahi hai</b>. Orders naam se mile hain. <button class="btn" style="margin:8px 0 0;padding:7px 12px;width:auto;font-size:12px" data-cust="' + esc(name) + '" onclick="document.getElementById(\'custHistoryModal\').remove(); addCustomerModal(this.getAttribute(\'data-cust\'))">\uFF0B Save Customer</button></div>';
+  var list = orders.length ? orders.map(function(o){
+    var it = o.items || [];
+    var p = it.filter(function(x){ return x && !x.completed && !x.ordered && !x.noStock; }).length;
+    var od = it.filter(function(x){ return x && x.ordered && !x.completed && !x.noStock; }).length;
+    var c = it.filter(function(x){ return x && x.completed; }).length;
+    var ns = it.filter(function(x){ return x && x.noStock && !x.completed; }).length;
+    var d = (o.dateOnly || (o.date ? o.date.split(",")[0] : "")) + (o.time ? " \u00B7 " + o.time : "");
+    var names = it.slice(0, 3).map(function(x){ return esc(x && x.name || ""); }).join(", ") + (it.length > 3 ? " +" + (it.length - 3) + " more" : "");
+    return '<div class="hist-order" onclick="document.getElementById(\'custHistoryModal\').remove(); openOrderDetail(\'' + esc(o.id) + '\')">' +
+      '<div style="display:flex;justify-content:space-between;gap:8px"><b style="font-size:13px">' + esc(d) + '</b><span class="small">' +
+      (it_u(o) ? '\uD83D\uDD34' + it_u(o) + ' ' : '') + (o.packed ? '\uD83D\uDCE6 PACKED ' : '') + '</span></div>' +
+      '<div class="small" style="margin-top:3px">' + (p ? '\u23F3' + p + ' ' : '') + (od ? '\uD83D\uDCE6' + od + ' ' : '') + (c ? '\u2705' + c + ' ' : '') + (ns ? '\uD83D\uDEAB' + ns : '') + '</div>' +
+      '<div class="small muted" style="margin-top:3px">' + names + '</div></div>';
+  }).join("") : '<div class="card muted">No orders found for this customer.</div>';
+  var modal = document.createElement("div");
+  modal.className = "modal-overlay";
+  modal.id = "custHistoryModal";
+  modal.innerHTML = '<div class="modal" style="max-height:90dvh;overflow-y:auto;-webkit-overflow-scrolling:touch">' +
+    '<h3 style="margin-bottom:2px">\uD83D\uDC64 ' + esc(name) + '</h3>' + info +
+    '<div class="hist-stats"><div class="hist-stat"><b>' + orders.length + '</b><span>Orders</span></div><div class="hist-stat"><b>' + totalItems + '</b><span>Items</span></div><div class="hist-stat"><b>' + pendingItems + '</b><span>Open items</span></div></div>' +
+    '<div class="small muted" style="margin-bottom:6px">Last order: <b>' + esc(last) + '</b></div>' +
+    (top ? '<div class="small" style="margin-bottom:10px">\uD83D\uDD01 Most ordered: ' + top + '</div>' : '') +
+    list +
+    '<button class="btn" style="margin-top:6px;background:#71809a" onclick="this.closest(\'.modal-overlay\').remove()">Close</button></div>';
+  document.body.appendChild(modal);
+}
+
 function hlText(text, q){
   var s = String(text == null ? "" : text);
   if(!q) return esc(s);
@@ -1215,7 +1361,7 @@ function renderOrdersList(filteredList){
   let ordersToDisplay = (filteredList || b.orders);
   const container = document.getElementById("ordersContainer");
   if(!container) return;
-  if (!ordersToDisplay.length) { container.innerHTML = '<div class="card muted">No orders found for this selection.</div>'; return; }
+  if (!ordersToDisplay.length) { container.innerHTML = activeFilterPillHtml() + '<div class="card muted">No orders found for this selection.</div>'; return; }
 
   var searchQ = ((document.getElementById("orderSearch") || {}).value || "").toLowerCase().trim();
   var html = "";
@@ -1240,6 +1386,7 @@ function renderOrdersList(filteredList){
     let orderedCount = items.filter(function(x){ return x.ordered && !x.completed && !x.noStock; }).length;
     let noStockCount = items.filter(function(x){ return x.noStock && !x.completed; }).length;
     let completedCount = items.filter(function(x){ return x.completed; }).length;
+    let urgentCount = items.filter(function(x){ return x && x.urgent && !x.completed && !x.noStock; }).length;
 
     let isCompleted = (items.length > 0 && (completedCount + noStockCount === items.length)) || o.closedManually;
     let unseenCount = o.unseenCount || 0;
@@ -1250,6 +1397,7 @@ function renderOrdersList(filteredList){
         '<div style="display:flex;align-items:center"><b style="font-size:17px">' + customerName + '</b>' +
           (unseenCount > 0 ? '<span class="unread-badge">' + unseenCount + '</span>' : '') +
           '<div class="inline-bars">' +
+            (urgentCount ? '<span class="bar-pill" style="background:#e53e3e;color:#fff">🔴' + urgentCount + '</span>' : '') +
             (pendingCount ? '<span class="bar-pill" style="background:#fff3dc;color:#b7791f">⏳' + pendingCount + '</span>' : '') +
             (orderedCount ? '<span class="bar-pill" style="background:#fefcbf;color:#744210">📦' + orderedCount + '</span>' : '') +
             (completedCount ? '<span class="bar-pill" style="background:#e6fffa;color:#234e52">✅' + completedCount + '</span>' : '') +
@@ -1267,7 +1415,7 @@ function renderOrdersList(filteredList){
       searchHitsHtml(o, searchQ) +
     '</div>';
   }
-  container.innerHTML = html;
+  container.innerHTML = activeFilterPillHtml() + html;
   setupOrderCardLongPress(ordersToDisplay);
 }
 
@@ -1342,6 +1490,7 @@ function showOrderOptionsModal(orderId){
       '<button class="btn secondary" style="margin-top:0" id="optOpenBtn">📋 Select / View Details</button>' +
       '<button class="btn secondary" style="margin-top:8px" id="optEditBtn">✏ Edit Order</button>' +
       '<button class="btn secondary" style="margin-top:8px" id="optAddItemsBtn">➕ Add Items</button>' +
+      ((o.customer && o.customer !== "undefined") ? '<button class="btn secondary" style="margin-top:8px" id="optHistBtn">🕘 Customer History</button>' : '') +
       (canDelete ? '<button class="btn secondary" style="margin-top:8px;color:#1f8a3b;border-color:#1f8a3b" id="optPackBtn">' + (o.packed ? '↩ Remove Packed Mark' : '📦 Mark as Packed') + '</button>' : '') +
       '<button class="btn warning" style="margin-top:8px" id="optCloseBtn">🔒 Force Close Order</button>' +
       (canDelete ? '<button class="btn danger" style="margin-top:8px" id="optDelBtn">🗑 Delete Order</button>' : '') +
@@ -1353,6 +1502,9 @@ function showOrderOptionsModal(orderId){
   document.getElementById("optEditBtn").onclick = () => { modal.remove(); editOrderModal(orderId); };
   document.getElementById("optAddItemsBtn").onclick = () => { modal.remove(); addItemsToExistingOrderModal(orderId); };
   document.getElementById("optCloseBtn").onclick = () => { modal.remove(); forceCloseOrder(orderId); };
+  if(document.getElementById("optHistBtn")){
+    document.getElementById("optHistBtn").onclick = () => { modal.remove(); openCustomerHistory(o.customer); };
+  }
   if(document.getElementById("optPackBtn")){
     document.getElementById("optPackBtn").onclick = () => { modal.remove(); togglePacked(orderId, true); };
   }
@@ -1406,6 +1558,7 @@ function deleteOrder(orderId) {
           b.orders[idx].deleted = true;
           b.orders[idx].deletedAt = new Date().toLocaleString();
           b.orders[idx].deletedBy = (latestMember && latestMember.name) || "";
+          logAct("deleted", b.orders[idx]);
           save();
           filterOrders();
           showToast("Order deleted. Restore from ⋮ > Deleted Orders.");
@@ -1484,7 +1637,7 @@ function filterOrders(){
       matchesDate = (orderIso === selectedDateFilter);
     }
 
-    return matchesQuery && matchesDate;
+    return matchesQuery && matchesDate && orderMatchesFilter(o);
   });
   renderOrdersList(filtered);
 }
@@ -1633,28 +1786,31 @@ function openOrderDetail(orderId){
   items.forEach(it => { if(it && !it.id) it.id = genId("ITM"); });
 
   let noStockItems = items.filter(function(i){ return i && i.noStock && !i.completed; });
+  noStockItems.sort(function(a, c){ return (c.urgent ? 1 : 0) - (a.urgent ? 1 : 0); });
   let pendingItems = items.filter(function(i){ return i && !i.completed && !i.ordered && !i.noStock; });
+  pendingItems.sort(function(a, c){ return (c.urgent ? 1 : 0) - (a.urgent ? 1 : 0); });
   let orderedItems = items.filter(function(i){ return i && i.ordered && !i.completed && !i.noStock; });
+  orderedItems.sort(function(a, c){ return (c.urgent ? 1 : 0) - (a.urgent ? 1 : 0); });
   let completedItems = items.filter(function(i){ return i && i.completed; });
 
   var pendingHtml = pendingItems.length ? pendingItems.map(function(item){
     let circleAction = 'onclick="handleCircleClick(\'' + esc(o.id) + '\', \'' + esc(item.id) + '\', this, event)"';
-    return '<div class="item-check-row" id="row-' + esc(item.id) + '"><div class="item-left"><span class="circle-btn" ' + circleAction + '></span><div style="min-width:0"><div>' + esc(item.name) + '</div>' + commentHtml(item) + '</div></div><span class="item-qty-tag">' + (item.qty || 1) + ' ' + esc(item.unit || 'PCS') + '</span></div>';
+    return '<div class="item-check-row' + ((item.urgent && !item.completed) ? ' urgent-row' : '') + '" id="row-' + esc(item.id) + '"><div class="item-left"><span class="circle-btn" ' + circleAction + '></span><div style="min-width:0"><div>' + esc(item.name) + urgentTag(item) + '</div>' + commentHtml(item) + '</div></div><span class="item-qty-tag">' + (item.qty || 1) + ' ' + esc(item.unit || 'PCS') + '</span></div>';
   }).join('') : '<div style="padding:12px;color:#71809a;font-size:13px">No pending items</div>';
 
   var orderedHtml = orderedItems.length ? orderedItems.map(function(item){
     let circleAction = 'onclick="handleCircleClick(\'' + esc(o.id) + '\', \'' + esc(item.id) + '\', this, event)"';
-    return '<div class="item-check-row" id="row-' + esc(item.id) + '" style="background:#fffdf5"><div class="item-left"><span class="circle-btn" style="border-color:#d69e2e;color:#d69e2e;font-size:10px;line-height:22px;text-align:center" ' + circleAction + '>📦</span><div style="min-width:0"><div>' + esc(item.name) + '</div>' + commentHtml(item) + '</div></div><span class="item-qty-tag" style="color:#b7791f">' + (item.qty || 1) + ' ' + esc(item.unit || 'PCS') + '</span></div>';
+    return '<div class="item-check-row' + ((item.urgent && !item.completed) ? ' urgent-row' : '') + '" id="row-' + esc(item.id) + '" style="background:#fffdf5"><div class="item-left"><span class="circle-btn" style="border-color:#d69e2e;color:#d69e2e;font-size:10px;line-height:22px;text-align:center" ' + circleAction + '>📦</span><div style="min-width:0"><div>' + esc(item.name) + urgentTag(item) + '</div>' + commentHtml(item) + '</div></div><span class="item-qty-tag" style="color:#b7791f">' + (item.qty || 1) + ' ' + esc(item.unit || 'PCS') + '</span></div>';
   }).join('') : '<div style="padding:12px;color:#71809a;font-size:13px">No ordered items</div>';
 
   var noStockHtml = noStockItems.length ? noStockItems.map(function(item){
-    return '<div class="item-check-row" id="row-' + esc(item.id) + '"><div class="item-left"><span class="circle-btn" style="border-color:#e53e3e;color:#e53e3e;font-size:10px;line-height:22px;text-align:center" onclick="toggleNoStockItem(\'' + esc(o.id) + '\', \'' + esc(item.id) + '\')">×</span><div style="min-width:0"><div>' + esc(item.name) + '</div>' + commentHtml(item) + '</div></div><span class="item-qty-tag">' + (item.qty || 1) + ' ' + esc(item.unit || 'PCS') + '</span></div>';
+    return '<div class="item-check-row' + ((item.urgent && !item.completed) ? ' urgent-row' : '') + '" id="row-' + esc(item.id) + '"><div class="item-left"><span class="circle-btn" style="border-color:#e53e3e;color:#e53e3e;font-size:10px;line-height:22px;text-align:center" onclick="toggleNoStockItem(\'' + esc(o.id) + '\', \'' + esc(item.id) + '\')">×</span><div style="min-width:0"><div>' + esc(item.name) + urgentTag(item) + '</div>' + commentHtml(item) + '</div></div><span class="item-qty-tag">' + (item.qty || 1) + ' ' + esc(item.unit || 'PCS') + '</span></div>';
   }).join('') : '<div style="padding:12px;color:#71809a;font-size:13px">No items marked No Stock</div>';
 
   var completedHtml = completedItems.length ? completedItems.map(function(item){
     let circleAction = 'onclick="handleCircleClick(\'' + esc(o.id) + '\', \'' + esc(item.id) + '\', this, event)"';
     let pickedByText = item.pickedBy ? '<div class="item-picked-tag">Picked by ' + esc(item.pickedBy) + '</div>' : '';
-    return '<div class="item-check-row" id="row-' + esc(item.id) + '"><div class="item-left"><span class="circle-btn checked" ' + circleAction + '>✓</span><div><div>' + esc(item.name) + '</div>' + pickedByText + commentHtml(item) + '</div></div><span class="item-qty-tag">' + (item.qty || 1) + ' ' + esc(item.unit || 'PCS') + '</span></div>';
+    return '<div class="item-check-row' + ((item.urgent && !item.completed) ? ' urgent-row' : '') + '" id="row-' + esc(item.id) + '"><div class="item-left"><span class="circle-btn checked" ' + circleAction + '>✓</span><div><div>' + esc(item.name) + urgentTag(item) + '</div>' + pickedByText + commentHtml(item) + '</div></div><span class="item-qty-tag">' + (item.qty || 1) + ' ' + esc(item.unit || 'PCS') + '</span></div>';
   }).join('') : '<div style="padding:12px;color:#71809a;font-size:13px">No completed items yet</div>';
 
   let adoptBtnHtml = o.adoptedBy ? 
@@ -1677,6 +1833,7 @@ function openOrderDetail(orderId){
           '<button class="btn secondary" style="margin:0;padding:6px 10px;width:auto;font-size:12px" onclick="copySelectedItems(\'' + esc(o.id) + '\')">📋 Copy (<span id="selCount">0</span>)</button>' +
           '<button class="btn" style="margin:0;padding:6px 10px;width:auto;font-size:12px;background:#d69e2e" onclick="markSelectedAsOrdered(\'' + esc(o.id) + '\')">📦 Mark Ordered</button>' +
           '<button class="btn danger" style="margin:0;padding:6px 10px;width:auto;font-size:12px" onclick="markSelectedNoStock(\'' + esc(o.id) + '\')">🚫 No Stock</button>' +
+          '<button class="btn secondary" style="margin:0;padding:6px 10px;width:auto;font-size:12px;color:#c53030;border-color:#c53030" onclick="markSelectedUrgent(\'' + esc(o.id) + '\')">🔴 Urgent</button>' +
           '<button class="btn secondary" style="margin:0;padding:6px 10px;width:auto;font-size:12px" onclick="openCommentModal(\'' + esc(o.id) + '\')">💬 Comment</button>' +
         '</div>' +
         '<div id="deleteItemsActionHeader" style="display:none;gap:6px">' +
@@ -1690,7 +1847,7 @@ function openOrderDetail(orderId){
     '</div>' +
     '<div class="card" style="position:relative">' +
       packedStampHtml(o, "lg") +
-      '<div style="display:flex;justify-content:space-between;align-items:flex-start"><div><h2 id="custTitle" style="margin:0">' + customerDisplay + '</h2><div class="small muted" style="margin-top:2px">Order By: ' + esc(o.orderBy||b.owner||"Owner") + '</div></div><div class="small muted" style="text-align:right">' + esc(o.dateOnly||'') + '</div></div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start"><div><h2 id="custTitle" style="margin:0">' + customerNameLink(o, customerDisplay) + '</h2><div class="small muted" style="margin-top:2px">Order By: ' + esc(o.orderBy||b.owner||"Owner") + '</div></div><div class="small muted" style="text-align:right">' + esc(o.dateOnly||'') + '</div></div>' +
       adoptBtnHtml +
       '<input id="pickerName" class="uppercase-input" value="' + esc(o.pickerName||'') + '" placeholder="Enter name of person picking parts..." style="margin-top:14px" onchange="updatePicker(\'' + esc(o.id) + '\', this.value)">' +
       
@@ -1706,6 +1863,164 @@ function openOrderDetail(orderId){
     '</div>';
 
   setupLongPressEvents(o.id);
+}
+
+/* ===== Activity log (stored in its own Firebase node so it never slows the main sync) ===== */
+var ACT_CACHE = { list: [], loaded: false, error: "" };
+function localIsoOf(ts){
+  var d = new Date(ts);
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
+function logAct(type, o, itemName){
+  try {
+    var b = current(); if(!b) return;
+    var me = getCurrentMember();
+    var who = (me && me.name) || data.currentUser || "Member";
+    var e = { t: Date.now(), w: who, y: type, o: (o && o.id) || "", c: (o && o.customer && o.customer !== "undefined") ? o.customer : "", i: itemName || "" };
+    ACT_CACHE.list.push(e);
+    if(hasFB && b.id){
+      db.ref("activity/" + b.id).push(e);
+    } else {
+      if(!Array.isArray(b.activity)) b.activity = [];
+      b.activity.push(e);
+      if(b.activity.length > 500) b.activity.splice(0, b.activity.length - 500);
+    }
+  } catch(err){}
+}
+function loadActivity(cb){
+  var b = current();
+  ACT_CACHE.error = "";
+  if(!hasFB || !b){
+    ACT_CACHE.list = ((b && b.activity) || []).slice(); ACT_CACHE.loaded = true; cb(); return;
+  }
+  db.ref("activity/" + b.id).limitToLast(1500).once("value", function(s){
+    var arr = [], v = s.val() || {};
+    Object.keys(v).forEach(function(k){ if(v[k] && v[k].t) arr.push(v[k]); });
+    arr.sort(function(a, c){ return a.t - c.t; });
+    ACT_CACHE.list = arr; ACT_CACHE.loaded = true; cb();
+  }, function(err){
+    ACT_CACHE.error = "Activity padhne ki permission nahi mili. Firebase rules me activity allow karna padega.";
+    ACT_CACHE.loaded = true; cb();
+  });
+}
+function actText(e){
+  var w = '<b>' + esc(e.w || "") + '</b>', it = e.i ? '"' + esc(e.i) + '"' : "", c = e.c ? ' <span class="muted">(' + esc(e.c) + ')</span>' : "";
+  switch(e.y){
+    case "picked": return '\u2705 ' + w + ' picked ' + it + c;
+    case "unpicked": return '\u21A9 ' + w + ' unticked ' + it + c;
+    case "ordered": return '\uD83D\uDCE6 ' + w + ' marked ' + it + ' ordered' + c;
+    case "nostock": return '\uD83D\uDEAB ' + w + ' marked ' + it + ' no stock' + c;
+    case "unnostock": return '\u21A9 ' + w + ' returned ' + it + ' to pending' + c;
+    case "urgent": return '\uD83D\uDD34 ' + w + ' marked ' + it + ' urgent' + c;
+    case "urgent_off": return '\u26AA ' + w + ' removed urgent from ' + it + c;
+    case "comment": return '\uD83D\uDCAC ' + w + ' commented on ' + it + c;
+    case "adopted": return '\u270B ' + w + ' adopted order' + c;
+    case "packed": return '\uD83D\uDCE6 ' + w + ' marked order PACKED' + c;
+    case "unpacked": return '\u21A9 ' + w + ' removed PACKED mark' + c;
+    case "closed": return '\uD83D\uDD12 ' + w + ' closed order' + c;
+    case "deleted": return '\uD83D\uDDD1 ' + w + ' deleted order' + c;
+    case "order_new": return '\uD83C\uDD95 ' + w + ' created order' + c + (e.i ? ' \u00B7 ' + esc(e.i) + ' items' : '');
+    case "items_added": return '\u2795 ' + w + ' added ' + esc(e.i || "") + ' items' + c;
+  }
+  return esc(e.y || "") + ' ' + w + c;
+}
+
+var actDate = null, actTab = "summary";
+function pageActivity(){
+  if(!canPackOrder()){ showToast("Sirf Owner ya Admin ye dekh sakta hai"); return; }
+  orderEntryActive = false;
+  document.body.classList.remove("order-entry-active");
+  currentScreen = "activity";
+  active(document.getElementById("nav-home"));
+  document.getElementById("header-area").innerHTML = "";
+  if(!actDate) actDate = getTodayIsoString();
+  document.getElementById("page").innerHTML = '<h2 style="margin-top:10px">\uD83D\uDCCA Activity & Reports</h2><div id="actBody"><div class="card muted">Loading...</div></div>';
+  loadActivity(renderActivityPage);
+}
+function actShiftDate(n){
+  var d = new Date(actDate + "T12:00:00"); d.setDate(d.getDate() + n);
+  var iso = localIsoOf(d.getTime());
+  if(iso > getTodayIsoString()) return;
+  actDate = iso; renderActivityPage();
+}
+function actSetTab(x){ actTab = x; renderActivityPage(); }
+function actRefresh(){ var el = document.getElementById("actBody"); if(el) el.innerHTML = '<div class="card muted">Loading...</div>'; loadActivity(renderActivityPage); }
+function actDayEvents(){ return ACT_CACHE.list.filter(function(e){ return e && e.t && localIsoOf(e.t) === actDate; }); }
+function actSummaryData(){
+  var b = current(), orders = (b.orders || []).filter(function(o){ return o && !o.deleted && ((o.isoDate || orderLocalIso(o)) === actDate); });
+  var s = { orders: orders.length, items: 0, done: 0, open: 0, ordered: 0, nostock: [], urgent: 0, packed: 0 };
+  orders.forEach(function(o){
+    if(o.packed) s.packed++;
+    (o.items || []).forEach(function(i){
+      if(!i) return;
+      s.items++;
+      if(i.completed) s.done++;
+      else if(i.noStock) s.nostock.push((i.name || "") + (o.customer && o.customer !== "undefined" ? " (" + o.customer + ")" : ""));
+      else { s.open++; if(i.ordered) s.ordered++; if(i.urgent) s.urgent++; }
+    });
+  });
+  return s;
+}
+function actSummaryText(){
+  var s = actSummaryData(), label = actDate === getTodayIsoString() ? "Today" : actDate;
+  var ev = actDayEvents(), workers = {};
+  ev.forEach(function(e){ if(e.y === "picked") workers[e.w] = (workers[e.w] || 0) + 1; });
+  var lines = ["*Daily Summary - " + label + "*", "",
+    "Orders received: " + s.orders, "Total items: " + s.items, "Completed: " + s.done, "Still pending: " + s.open + (s.ordered ? " (" + s.ordered + " ordered)" : ""),
+    "No stock: " + s.nostock.length, "Packed orders: " + s.packed];
+  if(s.urgent) lines.push("Urgent open: " + s.urgent);
+  var wk = Object.keys(workers).sort(function(a, c){ return workers[c] - workers[a]; });
+  if(wk.length){ lines.push("", "*Items picked*"); wk.forEach(function(k){ lines.push(k + ": " + workers[k]); }); }
+  if(s.nostock.length){ lines.push("", "*No stock items*"); s.nostock.slice(0, 30).forEach(function(x){ lines.push("- " + x); }); }
+  return lines.join("\n");
+}
+function actShareSummary(){
+  var txt = actSummaryText();
+  try { navigator.clipboard.writeText(txt); } catch(e){}
+  window.location.href = "whatsapp://send?text=" + encodeURIComponent(txt);
+}
+function renderActivityPage(){
+  var el = document.getElementById("actBody"); if(!el || currentScreen !== "activity") return;
+  var today = getTodayIsoString();
+  var label = actDate === today ? "Today" : (actDate === localIsoOf(Date.now() - 86400000) ? "Yesterday" : actDate);
+  var h = '<div class="act-bar"><button onclick="actShiftDate(-1)">\u25C0</button><div class="act-date">' + esc(label) + '<div class="small muted" style="font-weight:600">' + esc(actDate) + '</div></div><button onclick="actShiftDate(1)" ' + (actDate >= today ? 'disabled' : '') + '>\u25B6</button><button onclick="actRefresh()" aria-label="Refresh">\u21BB</button></div>' +
+    '<div class="act-tabs">' + [["summary", "Summary"], ["workers", "Workers"], ["feed", "Activity"]].map(function(x){ return '<button class="act-tab ' + (actTab === x[0] ? 'on' : '') + '" onclick="actSetTab(\'' + x[0] + '\')">' + x[1] + '</button>'; }).join("") + '</div>';
+  if(ACT_CACHE.error) h += '<div class="card" style="background:#fffaf0;border:1px solid #fbd38d;color:#744210;font-size:13px">' + esc(ACT_CACHE.error) + '</div>';
+  var ev = actDayEvents();
+  if(actTab === "summary"){
+    var s = actSummaryData();
+    h += '<div class="act-grid">' +
+      '<div class="act-stat"><b>' + s.orders + '</b><span>Orders received</span></div>' +
+      '<div class="act-stat"><b>' + s.items + '</b><span>Total items</span></div>' +
+      '<div class="act-stat"><b>' + s.done + '</b><span>\u2705 Completed</span></div>' +
+      '<div class="act-stat"><b>' + s.open + '</b><span>\u23F3 Still pending</span></div>' +
+      '<div class="act-stat"><b>' + s.nostock.length + '</b><span>\uD83D\uDEAB No stock</span></div>' +
+      '<div class="act-stat"><b>' + s.packed + '</b><span>\uD83D\uDCE6 Packed orders</span></div>' +
+      (s.urgent ? '<div class="act-stat"><b style="color:#e53e3e">' + s.urgent + '</b><span>\uD83D\uDD34 Urgent open</span></div>' : '') +
+      (s.ordered ? '<div class="act-stat"><b>' + s.ordered + '</b><span>Ordered (not received)</span></div>' : '') + '</div>';
+    if(s.nostock.length) h += '<div class="card"><b>\uD83D\uDEAB No stock items</b>' + s.nostock.slice(0, 40).map(function(x){ return '<div class="small" style="margin-top:4px">\u2022 ' + esc(x) + '</div>'; }).join("") + '</div>';
+    h += '<button class="btn" style="background:#25d366" onclick="actShareSummary()">\uD83D\uDCE4 Share Summary on WhatsApp</button>';
+  } else if(actTab === "workers"){
+    var by = {};
+    ev.forEach(function(e){ var w = e.w || "Member"; var r = by[w] = by[w] || {}; r[e.y] = (r[e.y] || 0) + 1; });
+    var names = Object.keys(by).sort(function(a, c){ return ((by[c].picked || 0) + (by[c].ordered || 0) + (by[c].nostock || 0)) - ((by[a].picked || 0) + (by[a].ordered || 0) + (by[a].nostock || 0)); });
+    if(!names.length) h += '<div class="card muted">Is din koi activity nahi mili.</div>';
+    names.forEach(function(n){
+      var r = by[n];
+      h += '<div class="act-worker"><div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:16px">\uD83D\uDC64 ' + esc(n) + '</b><span style="font-size:20px;font-weight:800;color:#1670e8">' + (r.picked || 0) + '<span class="small muted" style="font-weight:600"> picked</span></span></div>' +
+        '<div>' + (r.ordered ? '<span class="act-chip">\uD83D\uDCE6 ' + r.ordered + ' ordered</span>' : '') + (r.nostock ? '<span class="act-chip">\uD83D\uDEAB ' + r.nostock + ' no stock</span>' : '') +
+        (r.order_new ? '<span class="act-chip">\uD83C\uDD95 ' + r.order_new + ' orders</span>' : '') + (r.adopted ? '<span class="act-chip">\u270B ' + r.adopted + ' adopted</span>' : '') +
+        (r.packed ? '<span class="act-chip">\uD83D\uDCE6 ' + r.packed + ' packed</span>' : '') + (r.items_added ? '<span class="act-chip">\u2795 ' + r.items_added + ' add</span>' : '') +
+        (r.comment ? '<span class="act-chip">\uD83D\uDCAC ' + r.comment + '</span>' : '') + (r.urgent ? '<span class="act-chip">\uD83D\uDD34 ' + r.urgent + ' urgent</span>' : '') + '</div></div>';
+    });
+  } else {
+    if(!ev.length) h += '<div class="card muted">Is din koi activity nahi mili.</div>';
+    else h += '<div class="card" style="padding:6px 12px">' + ev.slice().reverse().slice(0, 300).map(function(e){
+      var d = new Date(e.t), hh = d.getHours() % 12 || 12, mm = String(d.getMinutes()).padStart(2, "0");
+      return '<div class="act-row"><div class="act-time">' + hh + ':' + mm + (d.getHours() >= 12 ? ' pm' : ' am') + '</div><div class="act-text">' + actText(e) + '</div></div>';
+    }).join("") + '</div>';
+  }
+  el.innerHTML = h;
 }
 
 function canPackOrder(){
@@ -1735,6 +2050,7 @@ function togglePacked(orderId, fromList){
       var b2 = current(), o2 = b2.orders.find(function(x){ return x && x.id === orderId; });
       if(!o2 || !canPackOrder()) return;
       delete o2.packed; delete o2.packedBy; delete o2.packedAt;
+      logAct("unpacked", o2);
       save();
       pushTeamNotification(who + " removed the PACKED mark from " + cust + " order.");
       if(fromList) filterOrders(); else openOrderDetail(orderId);
@@ -1744,6 +2060,7 @@ function togglePacked(orderId, fromList){
       var b2 = current(), o2 = b2.orders.find(function(x){ return x && x.id === orderId; });
       if(!o2 || !canPackOrder()) return;
       o2.packed = true; o2.packedBy = who; o2.packedAt = new Date().toISOString();
+      logAct("packed", o2);
       save();
       pushTeamNotification(cust + " order was marked PACKED by " + who + ".");
       window.__stampPopId = orderId;
@@ -1786,7 +2103,7 @@ function openCommentModal(orderId){
     var me = (typeof getCurrentMember === "function" && getCurrentMember()) || null;
     var who = (me && me.name) || data.currentUser || "Member";
     items.forEach(function(it){
-      if(text){ it.comment = text; it.commentBy = who; }
+      if(text){ it.comment = text; it.commentBy = who; logAct("comment", o, it.name); }
       else { delete it.comment; delete it.commentBy; }
     });
     save();
@@ -1814,6 +2131,7 @@ function toggleOrderDetailMenu(e, orderId) {
   menu.id = "orderDetailDropdownMenu";
   menu.className = "dropdown-menu";
   menu.innerHTML = 
+    (selectedItemsSet.size > 0 ? '<div class="menu-item" style="color:#c53030" onclick="markSelectedUrgent(\'' + esc(orderId) + '\'); closeOrderDetailMenu();">🔴 Urgent (' + selectedItemsSet.size + ')</div>' : '') +
     (canPackOrder() ? '<div class="menu-item" style="color:#1f8a3b" onclick="togglePacked(\'' + esc(orderId) + '\'); closeOrderDetailMenu();">' + (((current().orders.find(function(x){ return x && x.id === orderId; }) || {}).packed) ? '↩ Remove Packed Mark' : '📦 Mark as Packed') + '</div>' : '') +
     (selectedItemsSet.size > 0 ? '<div class="menu-item" onclick="openCommentModal(\'' + esc(orderId) + '\')">💬 Comment (' + selectedItemsSet.size + ')</div>' : '') +
     '<div class="menu-item" style="color:#ee5d50" onclick="startDeleteItemsMode(\'' + esc(orderId) + '\'); closeOrderDetailMenu();">🗑️ Delete Items</div>' +
@@ -1934,6 +2252,7 @@ function adoptOrder(orderId){
   let o = b.orders.find(x => x && x.id === orderId);
   if(!o) return;
   o.adoptedBy = userName;
+  logAct("adopted", o);
   save();
   try { if(hasFB) db.ref("adopt/" + b.id + "/" + orderId).set({ name: userName, ts: presenceTs() }); } catch(e){}
   pushTeamNotification(userName + " adopted order for " + ((o.customer && o.customer !== "undefined") ? o.customer : "Order"));
@@ -1946,6 +2265,7 @@ function forceCloseOrder(orderId){
     let o = b.orders.find(x => x && x.id === orderId);
     if(!o) return;
     o.closedManually = true;
+    logAct("closed", o);
     save();
     pushTeamNotification("Order for " + ((o.customer && o.customer !== "undefined") ? o.customer : "Order") + " was closed manually.");
     openOrderDetail(orderId);
@@ -1990,6 +2310,7 @@ function addItemsToExistingOrderModal(orderId){
     if(!o) return;
     if(!o.items) o.items = [];
     o.items.push(...newItems);
+    logAct("items_added", o, String(newItems.length));
     o.closedManually = false;
     o.unseenCount = (o.unseenCount || 0) + newItems.length;
     save();
@@ -2194,6 +2515,7 @@ function markSelectedAsOrdered(orderId){
     let item = o.items.find(it => it && it.id === itemId);
     if(item){
       item.ordered = true; item.noStock = false; item.completed = false;
+      logAct("ordered", o, item.name);
     }
   });
   save();
@@ -2204,12 +2526,12 @@ function markSelectedAsOrdered(orderId){
 function markSelectedNoStock(orderId){
   vibrate(30);
   const b=current(); const o=b && b.orders.find(x=>x && x.id===orderId); if(!o) return;
-  selectedItemsSet.forEach(function(itemId){ const item=(o.items||[]).find(it=>it && it.id===itemId); if(item){ item.noStock=true; item.ordered=false; item.completed=false; item.pickedBy=''; item.noStockAt=Date.now(); } });
+  selectedItemsSet.forEach(function(itemId){ const item=(o.items||[]).find(it=>it && it.id===itemId); if(item){ item.noStock=true; item.ordered=false; item.completed=false; item.pickedBy=''; item.noStockAt=Date.now(); logAct("nostock", o, item.name); } });
   save(); selectedItemsSet.clear(); openOrderDetail(orderId); showToast('Selected items marked NO STOCK');
 }
 function toggleNoStockItem(orderId,itemId){
   const b=current(); const o=b && b.orders.find(x=>x && x.id===orderId); const item=o && (o.items||[]).find(it=>it && it.id===itemId); if(!item) return;
-  item.noStock=!item.noStock; if(item.noStock){item.ordered=false;item.completed=false;item.noStockAt=Date.now();} save(); openOrderDetail(orderId);
+  item.noStock=!item.noStock; if(item.noStock){item.ordered=false;item.completed=false;item.noStockAt=Date.now();} logAct(item.noStock ? "nostock" : "unnostock", o, item.name); save(); openOrderDetail(orderId);
 }
 
 function triggerItemStatus(orderId, itemId, rowElement){
@@ -2218,7 +2540,7 @@ function triggerItemStatus(orderId, itemId, rowElement){
   let o = b.orders.find(x => x && x.id === orderId);
   if(!o) return;
   const existingItem = (o.items || []).find(it => it && it.id === itemId);
-  if(existingItem && existingItem.noStock){ existingItem.noStock=false; existingItem.ordered=false; existingItem.completed=false; save(); openOrderDetail(orderId); showToast('Item returned to Pending'); return; }
+  if(existingItem && existingItem.noStock){ existingItem.noStock=false; existingItem.ordered=false; existingItem.completed=false; logAct("unnostock", o, existingItem.name); save(); openOrderDetail(orderId); showToast('Item returned to Pending'); return; }
 
   if(!rowElement || rowElement.dataset.animating === "true") return;
   rowElement.dataset.animating = "true";
@@ -2241,6 +2563,7 @@ function triggerItemStatus(orderId, itemId, rowElement){
         } else {
           item.pickedBy = "";
         }
+        logAct(item.completed ? "picked" : "unpicked", o, item.name);
         save(); 
         var keepY = window.pageYOffset || document.documentElement.scrollTop || 0;
         openOrderDetail(orderId);
@@ -2554,6 +2877,7 @@ function saveOrder(){
     date: now.toLocaleString() 
   });
   
+  try { logAct("order_new", current().orders[current().orders.length - 1], String(items.length)); } catch(e){}
   save();
   clearOrderDraft();
   pushTeamNotification("New Order for " + c + " added by " + userName);
@@ -2746,13 +3070,13 @@ function pageCustomers(btn){
   var custHtml = (current().customers || []).length ? (current().customers || []).map(function(c){
     if(!c) return "";
     if(!c.id) c.id = genId("CUST");
-    return '<div class="list"><div><b>' + esc(c.name || "") + '</b><div class="small muted">' + esc(c.phone||"") + ' ' + esc(c.address||"") + '</div></div>' +
+    return '<div class="list"><div style="flex:1;min-width:0;cursor:pointer" data-cust="' + esc(c.name || "") + '" onclick="openCustomerHistory(this.getAttribute(\'data-cust\'))"><b>' + esc(c.name || "") + '</b> <span class="small" style="color:#1670e8">🕘</span><div class="small muted">' + esc(c.phone||"") + ' ' + esc(c.address||"") + '</div></div>' +
       '<button class="del-icon-btn" onclick="removeCustomer(\'' + esc(c.id) + '\')">🗑️</button></div>';
   }).join('') : '<div class="card muted">No customers yet.</div>';
   document.getElementById("page").innerHTML = '<h2 style="margin-top:10px">Customers</h2><button class="btn" onclick="addCustomerModal()">＋ Add New Customer</button>' + custHtml;
 }
 
-function addCustomerModal(){
+function addCustomerModal(prefillName){
   vibrate(20);
   let modal = document.createElement("div");
   modal.className = "modal-overlay";
@@ -2771,6 +3095,7 @@ function addCustomerModal(){
       '</div>' +
     '</div>';
   document.body.appendChild(modal);
+  if(prefillName){ try{ document.getElementById("custName").value = normCust(prefillName); }catch(e){} }
 
   document.getElementById("saveCustBtn").onclick = function(){
     let name = document.getElementById("custName").value.trim().toUpperCase();
