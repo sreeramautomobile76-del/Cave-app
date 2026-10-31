@@ -114,6 +114,13 @@ input:focus,select:focus,textarea:focus{border-color:#1670e8}
 .menu-item:active{background:#f0f5ff}
 
 #page{overflow-anchor:none}
+.search-hits{margin-top:8px;border-top:1px dashed #e2e8f0;padding-top:6px}
+.search-hit{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;padding:4px 0;font-size:13px;color:#2d3748}
+.search-hit .hit-name{min-width:0;overflow-wrap:anywhere;font-weight:600}
+.search-hit .hit-qty{flex-shrink:0;font-size:12px;color:#71809a;font-weight:600}
+.search-hit .item-comment{font-weight:500}
+.search-more{font-size:11px;color:#718096;padding-top:2px}
+mark.hl{background:#fff2a8;color:inherit;border-radius:3px;padding:0 1px}
 #selectionActions{position:fixed;top:0;left:0;right:0;margin:0 auto;max-width:480px;z-index:70;padding:calc(env(safe-area-inset-top,0px) + 8px) 10px 8px;background:#fff;border-bottom:1px solid #e2e8f0;box-shadow:0 3px 12px rgba(0,0,0,.12);justify-content:center;flex-wrap:wrap;gap:6px}
 #app.orders-fullscreen #selectionActions{max-width:none}
 .order-card-click{position:relative}
@@ -1181,6 +1188,28 @@ function setOrderTab(tabName, btnTarget) {
   filterOrders();
 }
 
+function hlText(text, q){
+  var s = String(text == null ? "" : text);
+  if(!q) return esc(s);
+  var i = s.toLowerCase().indexOf(q);
+  if(i === -1) return esc(s);
+  return esc(s.slice(0, i)) + '<mark class="hl">' + esc(s.slice(i, i + q.length)) + '</mark>' + esc(s.slice(i + q.length));
+}
+
+function searchHitsHtml(o, q){
+  if(!q) return "";
+  var hits = (o.items || []).filter(function(i){ return i && (((i.name || "").toLowerCase().indexOf(q) !== -1) || ((i.comment || "").toLowerCase().indexOf(q) !== -1)); });
+  if(!hits.length) return "";
+  var shown = hits.slice(0, 8);
+  var html = '<div class="search-hits">' + shown.map(function(i){
+    var ic = i.completed ? "\u2705" : (i.noStock ? "\uD83D\uDEAB" : (i.ordered ? "\uD83D\uDCE6" : "\u23F3"));
+    var cm = i.comment ? '<div class="item-comment">\uD83D\uDCAC ' + hlText(i.comment, q) + '</div>' : '';
+    return '<div class="search-hit"><div class="hit-name">' + ic + ' ' + hlText(i.name, q) + cm + '</div><div class="hit-qty">' + (i.qty || 1) + ' ' + esc(i.unit || "PCS") + '</div></div>';
+  }).join("");
+  if(hits.length > shown.length) html += '<div class="search-more">+' + (hits.length - shown.length) + ' more matching items</div>';
+  return html + '</div>';
+}
+
 function renderOrdersList(filteredList){
   let b = current();
   let ordersToDisplay = (filteredList || b.orders);
@@ -1188,6 +1217,7 @@ function renderOrdersList(filteredList){
   if(!container) return;
   if (!ordersToDisplay.length) { container.innerHTML = '<div class="card muted">No orders found for this selection.</div>'; return; }
 
+  var searchQ = ((document.getElementById("orderSearch") || {}).value || "").toLowerCase().trim();
   var html = "";
   var revList = ordersToDisplay.slice().reverse();
   for (var i = 0; i < revList.length; i++) {
@@ -1234,6 +1264,7 @@ function renderOrdersList(filteredList){
       
       (o.adoptedBy ? '<div style="margin-top:6px"><span class="badge badge-adopted">✋ Adopted by: ' + esc(o.adoptedBy) + '</span></div>' : '') +
       (o.closedManually ? '<div style="margin-top:4px"><span class="badge badge-closed">🔒 Closed Manually</span></div>' : '') +
+      searchHitsHtml(o, searchQ) +
     '</div>';
   }
   container.innerHTML = html;
@@ -1445,7 +1476,7 @@ function filterOrders(){
 
     let customerName = (o.customer || "").toLowerCase();
     let orderBy = (o.orderBy || "").toLowerCase();
-    let matchesQuery = !query || customerName.indexOf(query) !== -1 || orderBy.indexOf(query) !== -1 || (o.items || []).some(function(i){ return i && (i.name || "").toLowerCase().indexOf(query) !== -1; });
+    let matchesQuery = !query || customerName.indexOf(query) !== -1 || orderBy.indexOf(query) !== -1 || (o.items || []).some(function(i){ return i && (((i.name || "").toLowerCase().indexOf(query) !== -1) || ((i.comment || "").toLowerCase().indexOf(query) !== -1)); });
     
     let matchesDate = true;
     if(selectedDateFilter) {
