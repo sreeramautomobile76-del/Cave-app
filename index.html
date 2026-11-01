@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#123b72">
+<script>try{ if(localStorage.getItem("CAVE_DARK")==="1") document.documentElement.classList.add("dark"); }catch(e){}</script>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -114,6 +115,11 @@ input:focus,select:focus,textarea:focus{border-color:#1670e8}
 .menu-item:active{background:#f0f5ff}
 
 #page{overflow-anchor:none}
+html.dark{filter:invert(.92) hue-rotate(180deg);background:#fff}
+html.dark img,html.dark video,html.dark canvas,html.dark iframe,html.dark mark.hl{filter:invert(1) hue-rotate(180deg)}
+html.dark .packed-stamp{filter:invert(1) hue-rotate(180deg);mix-blend-mode:normal;background:transparent}
+.bill-opt{display:flex;align-items:center;gap:8px;margin:10px 0 4px;font-size:14px;font-weight:600}
+.bill-opt input{width:20px;height:20px}
 .act-bar{display:flex;align-items:center;gap:8px;margin:10px 0}
 .act-bar button{border:1px solid #e2e8f0;background:#fff;border-radius:12px;padding:8px 12px;font-size:14px;font-weight:700}
 .act-bar button:disabled{opacity:.35}
@@ -944,6 +950,7 @@ function pageHome(btn){
       '<div class="tile" onclick="pageTeam(document.getElementById(\'nav-team\'))"><b>👥 Team Members</b><span class="small muted">' + current().team.length + ' members</span></div>' +
       '<div class="tile" onclick="pageCustomers(document.getElementById(\'nav-customers\'))"><b>👤 Customers</b><span class="small muted">' + current().customers.length + ' customers</span></div>' +
       (canPackOrder() ? '<div class="tile" onclick="pageActivity()"><b>📊 Activity & Reports</b><span class="small muted">Kaun kya kar raha hai</span></div>' : '') +
+      '<div class="tile" onclick="toggleDarkMode()"><b>🌙 Dark Mode</b><span class="small muted">' + (isDarkMode() ? 'ON - tap to turn off' : 'OFF - tap to turn on') + '</span></div>' +
     '</div>';
 }
 
@@ -1859,6 +1866,7 @@ function openOrderDetail(orderId){
       '<div class="section-title">✅ Completed Items</div><div class="card" style="padding:4px 14px">' + completedHtml + '</div>' +
       '<button class="btn" style="margin-top:16px" onclick="savePickerAndBack(\'' + esc(o.id) + '\')">Save</button>' +
       '<button class="btn success" style="margin-top:8px" onclick="shareWhatsApp(\'' + esc(o.id) + '\')">💬 Share on WhatsApp App</button>' +
+      '<button class="btn secondary" style="margin-top:8px" onclick="openBillShare(\'' + esc(o.id) + '\')">🖼️ Share as Image / PDF</button>' +
       closeOrderBtnHtml +
     '</div>';
 
@@ -2021,6 +2029,180 @@ function renderActivityPage(){
     }).join("") + '</div>';
   }
   el.innerHTML = h;
+}
+
+/* ===== Dark mode ===== */
+function isDarkMode(){ return document.documentElement.classList.contains("dark"); }
+function toggleDarkMode(){
+  var on = !isDarkMode();
+  document.documentElement.classList.toggle("dark", on);
+  try { localStorage.setItem("CAVE_DARK", on ? "1" : "0"); } catch(e){}
+  showToast(on ? "Dark mode ON" : "Dark mode OFF");
+  try { pageHome(document.getElementById("nav-home")); } catch(e){}
+}
+
+/* ===== Share order as Image / PDF (drawn on a canvas, no external library) ===== */
+function billWrap(ctx, text, maxW){
+  var words = String(text || "").split(/\s+/), lines = [], cur = "";
+  words.forEach(function(w){
+    var test = cur ? cur + " " + w : w;
+    if(ctx.measureText(test).width > maxW && cur){ lines.push(cur); cur = w; } else cur = test;
+  });
+  if(cur) lines.push(cur);
+  return lines.length ? lines : [""];
+}
+function renderBillPages(o, withComments){
+  var W = 900, H = 1273, M = 48, pages = [], cv, ctx, y;
+  var b = current();
+  var cust = (o.customer && o.customer !== "undefined") ? o.customer : "Order";
+  var items = (o.items || []).filter(Boolean);
+  function newPage(first){
+    cv = document.createElement("canvas"); cv.width = W; cv.height = H;
+    ctx = cv.getContext("2d");
+    ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = "#123b72"; ctx.fillRect(0, 0, W, first ? 150 : 70);
+    ctx.fillStyle = "#ffffff"; ctx.textBaseline = "alphabetic";
+    if(first){
+      ctx.font = "bold 40px sans-serif"; ctx.fillText(String(b.name || "CAVE").slice(0, 30), M, 70);
+      ctx.font = "24px sans-serif"; ctx.fillText("ORDER DETAILS", M, 112);
+      y = 200;
+    } else {
+      ctx.font = "bold 28px sans-serif"; ctx.fillText(cust.slice(0, 32) + " (contd.)", M, 46);
+      y = 112;
+    }
+    pages.push(cv);
+  }
+  function need(h){ if(y + h > H - 90) newPage(false); }
+  newPage(true);
+  ctx.fillStyle = "#1b2559"; ctx.font = "bold 38px sans-serif";
+  billWrap(ctx, cust, W - 2 * M - 220).forEach(function(l){ ctx.fillText(l, M, y); y += 46; });
+  ctx.fillStyle = "#718096"; ctx.font = "24px sans-serif";
+  ctx.fillText((o.dateOnly || "") + (o.time ? "  \u00B7  " + o.time : ""), M, y); y += 30;
+  if(o.packed){
+    ctx.save(); ctx.translate(W - 190, 270); ctx.rotate(-0.2);
+    ctx.strokeStyle = "#1f8a3b"; ctx.fillStyle = "#1f8a3b"; ctx.lineWidth = 6;
+    ctx.strokeRect(-120, -42, 240, 84); ctx.lineWidth = 2; ctx.strokeRect(-112, -34, 224, 68);
+    ctx.font = "bold 46px sans-serif"; ctx.textAlign = "center"; ctx.fillText("PACKED", 0, 16);
+    ctx.restore(); ctx.textAlign = "left";
+  }
+  y += 14;
+  var groups = [
+    ["Completed", "#1f8a3b", items.filter(function(x){ return x.completed; })],
+    ["Pending", "#b7791f", items.filter(function(x){ return !x.completed && !x.noStock; })],
+    ["No Stock", "#c53030", items.filter(function(x){ return x.noStock && !x.completed; })]
+  ];
+  groups.forEach(function(g){
+    if(!g[2].length) return;
+    need(110);
+    ctx.fillStyle = g[1]; ctx.fillRect(M, y, W - 2 * M, 48);
+    ctx.fillStyle = "#ffffff"; ctx.font = "bold 26px sans-serif";
+    ctx.fillText(g[0] + "  (" + g[2].length + ")", M + 16, y + 33); y += 48;
+    g[2].forEach(function(it, n){
+      ctx.font = "bold 28px sans-serif";
+      var nameLines = billWrap(ctx, it.name || "", W - 2 * M - 230);
+      var cm = (withComments && it.comment) ? (ctx.font = "22px sans-serif", billWrap(ctx, it.comment, W - 2 * M - 60)) : [];
+      var h = nameLines.length * 38 + cm.length * 30 + 24;
+      need(h);
+      if(n % 2 === 0){ ctx.fillStyle = "#f7fafc"; ctx.fillRect(M, y, W - 2 * M, h); }
+      var yy = y + 40;
+      ctx.fillStyle = "#1b2559"; ctx.font = "bold 28px sans-serif";
+      nameLines.forEach(function(l, k){ ctx.fillText(l, M + 16, yy + k * 38); });
+      ctx.textAlign = "right"; ctx.fillStyle = "#2d3748"; ctx.font = "bold 28px sans-serif";
+      ctx.fillText((it.qty || 1) + " " + (it.unit || "PCS"), W - M - 16, yy); ctx.textAlign = "left";
+      yy += (nameLines.length - 1) * 38;
+      if(cm.length){ ctx.fillStyle = "#4a5568"; ctx.font = "italic 22px sans-serif"; cm.forEach(function(l, k){ ctx.fillText(l, M + 16, yy + 32 + k * 30); }); }
+      y += h;
+    });
+    y += 22;
+  });
+  if(o.notes){
+    ctx.font = "24px sans-serif";
+    var nl = billWrap(ctx, "Notes: " + o.notes, W - 2 * M);
+    need(nl.length * 32 + 30);
+    ctx.fillStyle = "#4a5568"; nl.forEach(function(l){ ctx.fillText(l, M, y + 24); y += 32; }); y += 14;
+  }
+  need(60);
+  ctx.fillStyle = "#718096"; ctx.font = "22px sans-serif"; ctx.fillText("Thank you!", M, y + 24);
+  pages.forEach(function(c, i){
+    var g = c.getContext("2d"); g.fillStyle = "#a0aec0"; g.font = "20px sans-serif"; g.textAlign = "right";
+    g.fillText("Page " + (i + 1) + " / " + pages.length, W - M, H - 30); g.textAlign = "left";
+  });
+  return pages;
+}
+function canvasBlob(cv, type, q){ return new Promise(function(res){ cv.toBlob(res, type, q); }); }
+function buildPdf(imgs){
+  var enc = new TextEncoder(), parts = [], offs = [], pos = 0;
+  function push(x){ var u = (typeof x === "string") ? enc.encode(x) : x; parts.push(u); pos += u.length; }
+  function begin(n){ offs[n] = pos; push(n + " 0 obj\n"); }
+  var kids = imgs.map(function(_, i){ return (3 + 3 * i) + " 0 R"; }).join(" ");
+  push("%PDF-1.4\n");
+  begin(1); push("<< /Type /Catalog /Pages 2 0 R >>\nendobj\n");
+  begin(2); push("<< /Type /Pages /Kids [" + kids + "] /Count " + imgs.length + " >>\nendobj\n");
+  imgs.forEach(function(im, i){
+    var pw = 595, ph = Math.round(595 * im.h / im.w * 100) / 100, pg = 3 + 3 * i, ct = 4 + 3 * i, ix = 5 + 3 * i;
+    begin(pg); push("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 " + pw + " " + ph + "] /Resources << /XObject << /Im0 " + ix + " 0 R >> >> /Contents " + ct + " 0 R >>\nendobj\n");
+    var cs = "q " + pw + " 0 0 " + ph + " 0 0 cm /Im0 Do Q";
+    begin(ct); push("<< /Length " + cs.length + " >>\nstream\n" + cs + "\nendstream\nendobj\n");
+    begin(ix); push("<< /Type /XObject /Subtype /Image /Width " + im.w + " /Height " + im.h + " /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length " + im.data.length + " >>\nstream\n");
+    push(im.data); push("\nendstream\nendobj\n");
+  });
+  var total = 3 + 3 * imgs.length, xr = pos;
+  var x = "xref\n0 " + total + "\n0000000000 65535 f \n";
+  for(var n = 1; n < total; n++){ x += String(offs[n]).padStart(10, "0") + " 00000 n \n"; }
+  push(x + "trailer\n<< /Size " + total + " /Root 1 0 R >>\nstartxref\n" + xr + "\n%%EOF");
+  return new Blob(parts, { type: "application/pdf" });
+}
+function billDownload(file){
+  var a = document.createElement("a"), u = URL.createObjectURL(file);
+  a.href = u; a.download = file.name; document.body.appendChild(a); a.click();
+  setTimeout(function(){ a.remove(); URL.revokeObjectURL(u); }, 1500);
+}
+async function doBillShare(orderId, kind){
+  var o = current().orders.find(function(x){ return x && x.id === orderId; });
+  if(!o) return;
+  var cm = !!(document.getElementById("billComments") || {}).checked;
+  var btns = document.querySelectorAll("#billShareModal button"); btns.forEach(function(x){ x.disabled = true; });
+  showToast("Bana raha hai...");
+  try {
+    var pages = renderBillPages(o, cm);
+    var cust = ((o.customer && o.customer !== "undefined") ? o.customer : "order").replace(/[^A-Za-z0-9]+/g, "_").slice(0, 30) || "order";
+    var files = [];
+    if(kind === "pdf"){
+      var imgs = [];
+      for(var i = 0; i < pages.length; i++){
+        var jb = await canvasBlob(pages[i], "image/jpeg", 0.92);
+        imgs.push({ data: new Uint8Array(await jb.arrayBuffer()), w: pages[i].width, h: pages[i].height });
+      }
+      files.push(new File([buildPdf(imgs)], "Order_" + cust + ".pdf", { type: "application/pdf" }));
+    } else {
+      for(var j = 0; j < pages.length; j++){
+        var pb = await canvasBlob(pages[j], "image/png");
+        files.push(new File([pb], "Order_" + cust + (pages.length > 1 ? "_" + (j + 1) : "") + ".png", { type: "image/png" }));
+      }
+    }
+    document.getElementById("billShareModal")?.remove();
+    if(navigator.canShare && navigator.canShare({ files: files }) && navigator.share){
+      try { await navigator.share({ files: files, title: "Order - " + cust }); }
+      catch(e){ if(e && e.name !== "AbortError"){ files.forEach(billDownload); showToast("File download ho gayi"); } }
+    } else {
+      files.forEach(billDownload);
+      showToast("File download ho gayi. Ab WhatsApp me bhej do.");
+    }
+  } catch(err){
+    showToast("File nahi ban payi. Dobara try karo.");
+    btns.forEach(function(x){ x.disabled = false; });
+  }
+}
+function openBillShare(orderId){
+  var modal = document.createElement("div");
+  modal.className = "modal-overlay"; modal.id = "billShareModal";
+  modal.innerHTML = '<div class="modal"><h3>\uD83D\uDDBC\uFE0F Share as Image / PDF</h3>' +
+    '<p class="muted small">Order ek saaf bill jaisa ban jayega. Picker ka naam isme nahi aata.</p>' +
+    '<label class="bill-opt"><input type="checkbox" id="billComments"> Item comments bhi dikhao</label>' +
+    '<button class="btn" style="margin-top:12px" onclick="doBillShare(\'' + esc(orderId) + '\', \'image\')">\uD83D\uDDBC\uFE0F Image bhejo</button>' +
+    '<button class="btn secondary" style="margin-top:8px" onclick="doBillShare(\'' + esc(orderId) + '\', \'pdf\')">\uD83D\uDCC4 PDF bhejo</button>' +
+    '<button class="btn" style="margin-top:8px;background:#71809a" onclick="this.closest(\'.modal-overlay\').remove()">Cancel</button></div>';
+  document.body.appendChild(modal);
 }
 
 function canPackOrder(){
