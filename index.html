@@ -380,6 +380,12 @@ function mergeBusiness(remote, local){
   return out;
 }
 function _dk(id){ return "CAVE_DIRTY_" + id; }
+var SYNC_STATE = { connected: null, lastOk: 0, lastRead: 0, lastErr: "", toastAt: 0 };
+function syncFail(msg){
+  SYNC_STATE.lastErr = String(msg || "Unknown error");
+  var n = Date.now();
+  if(n - SYNC_STATE.toastAt > 20000){ SYNC_STATE.toastAt = n; try { showToast("Sync problem: " + SYNC_STATE.lastErr); } catch(e){} }
+}
 function syncNow(){
   if(!hasFB) return;
   const b = current();
@@ -390,7 +396,8 @@ function syncNow(){
       const cur = data.businesses.find(function(x){ return x.id === id; }) || b;
       return JSON.parse(JSON.stringify(mergeBusiness(remote, cur)));
     }, function(err, committed){
-      if(!err && committed){ try { localStorage.removeItem(_dk(id)); } catch(e){} }
+      if(err){ syncFail((err.code || err.message || err) + ""); return; }
+      if(committed){ SYNC_STATE.lastOk = Date.now(); SYNC_STATE.lastErr = ""; try { localStorage.removeItem(_dk(id)); } catch(e){} }
     }, true);
   } catch(e){}
 }
@@ -498,6 +505,7 @@ function listenToFirebase(){
   window.lastNotifTime = Number(localStorage.getItem("CAVE_LASTNOTIF_" + busId)) || 0;
   activeFirebaseRef = db.ref("businesses/" + busId);
   activeFirebaseRef.on("value", function(snapshot){
+    SYNC_STATE.lastRead = Date.now();
     let cloudData = normB(snapshot.val());
     if(cloudData){
       let idx = data.businesses.findIndex(x => x.id === busId);
@@ -535,7 +543,7 @@ function listenToFirebase(){
         else if(txt.includes("Customers")) pageCustomers(activeTab);
       }
     }
-  });
+  }, function(err){ syncFail('Cannot read data: ' + ((err && (err.code || err.message)) || err)); });
 }
 
 function pushTeamNotification(msgText) {
@@ -784,6 +792,13 @@ function dashboard(){
   else pageHome(document.getElementById("nav-home"));
 }
 
+function forceResync(){
+  try { listenToFirebase(); } catch(e){}
+  try { var b = current(); if(b) localStorage.setItem(_dk(b.id), "1"); } catch(e){}
+  syncNow();
+  showToast("Sync started");
+  document.querySelectorAll(".modal-overlay").forEach(function(m){ m.remove(); });
+}
 function openSettings(){
   vibrate(20);
   let b = current();
@@ -802,6 +817,11 @@ function openSettings(){
         '<div>👑 <b>Owner:</b> ' + esc(b.owner || "Not Specified") + '</div>' +
         '<div>📞 <b>Mobile:</b> ' + esc(b.mobile || "Not Specified") + '</div>' +
       '</div>' +
+      '<div style="font-size:12px;line-height:1.6;margin-bottom:12px;padding:10px;border-radius:12px;background:#f7fafc;border:1px solid #e2e8f0"><b>Sync status</b><br>' +
+        'Server: ' + (SYNC_STATE.connected === null ? 'checking...' : (SYNC_STATE.connected ? '\uD83D\uDFE2 connected' : '\uD83D\uDD34 not connected')) + '<br>' +
+        'Last upload: ' + (SYNC_STATE.lastOk ? new Date(SYNC_STATE.lastOk).toLocaleTimeString() : '-') + ' \u00B7 Last download: ' + (SYNC_STATE.lastRead ? new Date(SYNC_STATE.lastRead).toLocaleTimeString() : '-') + '<br>' +
+        (SYNC_STATE.lastErr ? '<span style="color:#c53030">Error: ' + esc(SYNC_STATE.lastErr) + '</span>' : '<span class="muted">No errors</span>') +
+        '<button class="btn secondary" style="margin:8px 0 0;padding:7px 12px;width:auto;font-size:12px" onclick="forceResync()">\uD83D\uDD04 Sync now</button></div>' +
       '<button class="btn secondary" style="margin-top:0" onclick="copyBusinessID(\'' + esc(b.id) + '\')">📋 Copy Business ID</button>' +
       '<button class="btn secondary" style="margin-top:8px" onclick="switchActiveUserModal()">👤 Switch Current User</button>' +
       '<button class="btn secondary" style="margin-top:8px" onclick="enableNotifications()">🔔 Enable Phone Notifications</button>' +
@@ -3435,6 +3455,7 @@ window.addEventListener("offline", updateNetBadge);
 updateNetBadge();
 try {
   db.ref(".info/connected").on("value", function(s){
+    SYNC_STATE.connected = (s.val() === true);
     if(s.val() === true){
       const cb = current();
       if(cb && localStorage.getItem(_dk(cb.id))) syncNow();
