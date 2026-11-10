@@ -115,6 +115,43 @@ input:focus,select:focus,textarea:focus{border-color:#1670e8}
 .menu-item:active{background:#f0f5ff}
 
 #page{overflow-anchor:none}
+.recv-head{position:relative;display:flex;align-items:center;gap:8px;margin:10px 0 12px}
+.recv-title{flex:1;min-width:0;white-space:nowrap;overflow:hidden;font-size:20px;font-weight:800;color:#1b2559;display:flex;align-items:center;gap:8px;transition:opacity .2s}
+.recv-ico{display:inline-grid;place-items:center;width:36px;height:36px;border-radius:12px;background:linear-gradient(135deg,#1670e8,#3aa0ff);font-size:18px;flex-shrink:0}
+.recv-head.searching .recv-title{opacity:0}
+.recv-search{display:flex;align-items:center;width:40px;height:40px;flex-shrink:0;overflow:hidden;border-radius:20px;background:#eef2f9;transition:width .3s ease}
+.recv-search input{flex:1;min-width:0;border:0;background:transparent;outline:0;font-size:16px;font-family:inherit;padding:0 4px;margin:0;height:100%}
+.recv-search .recv-x{display:none;border:0;background:none;color:#718096;font-size:16px;padding:0 12px}
+.recv-search.open .recv-x{display:block}
+.recv-ibtn{width:40px;height:40px;flex-shrink:0;border:0;border-radius:50%;background:#eef2f9;font-size:18px;color:#2d3748;padding:0;display:grid;place-items:center}
+.recv-search .recv-ibtn{background:transparent}
+.recv-menu{position:absolute;right:0;top:46px;z-index:90;min-width:210px;background:#fff;border-radius:14px;box-shadow:0 8px 28px rgba(0,0,0,.18);overflow:hidden;animation:recvPop .15s ease both}
+@keyframes recvPop{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.recv-menu button{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;text-align:left;border:0;background:#fff;padding:13px 16px;font-size:14px;font-weight:600;color:#2d3748;border-bottom:1px solid #f0f2f5}
+.recv-menu button:last-child{border-bottom:0}
+.recv-menu .tick{color:#1670e8;font-weight:800}
+.recv-datebar{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding:10px 12px;border-radius:18px;background:linear-gradient(135deg,#123b72,#1670e8);color:#fff;box-shadow:0 6px 16px rgba(22,112,232,.25)}
+.recv-datebar button{width:38px;height:38px;border:0;border-radius:50%;background:rgba(255,255,255,.18);color:#fff;font-size:14px;padding:0}
+.recv-datebar button:disabled{opacity:.3}
+.recv-datebar .dl{text-align:center;line-height:1.25}
+.recv-datebar .dl b{display:block;font-size:17px}
+.recv-datebar .dl span{font-size:12px;opacity:.85}
+.recv-row{display:flex;align-items:center;gap:12px;padding:12px;margin-bottom:10px;border-radius:18px;background:#fff;box-shadow:0 2px 10px rgba(27,37,89,.07);border:1px solid #eef1f7;cursor:pointer;animation:recvIn .25s ease both}
+@keyframes recvIn{from{opacity:0}to{opacity:1}}
+.recv-av{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;font-size:19px;font-weight:800;flex-shrink:0}
+.recv-body{flex:1;min-width:0}
+.recv-name{font-weight:800;color:#1b2559;overflow-wrap:anywhere;line-height:1.25}
+.recv-meta{margin-top:4px;font-size:12px;color:#718096}
+.recv-chip{display:inline-block;margin-right:6px;padding:2px 8px;border-radius:999px;background:#eef6ff;color:#1670e8;font-weight:700;font-size:11.5px}
+.recv-note{margin-top:5px;font-size:12px;color:#4a5568;background:#f7f9fc;border-radius:8px;padding:4px 8px;overflow-wrap:anywhere}
+.recv-boxes{flex-shrink:0;text-align:center;min-width:58px;padding:7px 8px;border-radius:14px;background:linear-gradient(135deg,#1670e8,#3aa0ff);color:#fff}
+.recv-boxes b{display:block;font-size:21px;line-height:1.05}
+.recv-boxes span{font-size:9.5px;font-weight:800;letter-spacing:.6px;opacity:.9}
+.recv-day{display:inline-block;margin:10px 0 8px;padding:4px 12px;border-radius:999px;background:#eef2f9;font-size:12px;font-weight:800;color:#4a5568}
+.recv-empty{text-align:center;padding:36px 16px;color:#718096}
+.recv-empty .big{font-size:54px;line-height:1}
+.recv-empty p{margin:10px 0 0;font-size:14px;font-weight:600}
+.recv-fab{position:fixed;right:18px;bottom:84px;z-index:50;width:58px;height:58px;border:0;border-radius:50%;background:linear-gradient(135deg,#1670e8,#3aa0ff);color:#fff;font-size:30px;line-height:1;padding:0;box-shadow:0 8px 20px rgba(22,112,232,.45)}
 .date-nav{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:#1670e8}
 .date-nav button{border:1px solid #cfe0ff;background:#fff;color:#1670e8;border-radius:10px;width:30px;height:28px;font-size:12px;padding:0}
 .date-nav button:disabled{opacity:.35}
@@ -287,7 +324,7 @@ function toArr(x){
 }
 function normB(b){
   if(!b || typeof b !== "object") return b;
-  ["orders","team","customers","removedIds"].forEach(function(k){ if(b[k] != null) b[k] = toArr(b[k]); });
+  ["orders","team","customers","received","removedIds"].forEach(function(k){ if(b[k] != null) b[k] = toArr(b[k]); });
   (b.orders || []).forEach(function(o){
     if(o && typeof o === "object"){ ["items","deletedItems"].forEach(function(k){ if(o[k] != null) o[k] = toArr(o[k]); }); }
   });
@@ -361,6 +398,7 @@ function mergeList(r, l, removed, isTeam){
     const e = map.get(x.id);
     if(!e){ map.set(x.id, x); }
     else if(isTeam && x.isAdmin && !e.isAdmin){ map.set(x.id, Object.assign({}, e, { isAdmin: true, role: x.role })); }
+    else if(!isTeam && (x.updatedAt || 0) > (e.updatedAt || 0)){ map.set(x.id, x); }
   });
   return Array.from(map.values());
 }
@@ -377,6 +415,7 @@ function mergeBusiness(remote, local){
   out.orders = mergeOrders(remote.orders, local.orders);
   out.team = mergeList(remote.team, local.team, removed, true);
   out.customers = mergeList(remote.customers, local.customers, removed, false);
+  out.received = mergeList(remote.received, local.received, removed, false);
   const rn = remote.lastNotification, ln = local.lastNotification;
   if(rn || ln) out.lastNotification = (((ln && ln.timestamp) || 0) > ((rn && rn.timestamp) || 0)) ? ln : rn;
   return out;
@@ -934,6 +973,10 @@ function handleCaveSystemBack(){
       pageOrders(document.getElementById('nav-orders'));
       return;
     }
+    if(currentScreen === 'received' && recvState.view === 'partyDetail'){
+      recvBackFromParty();
+      return;
+    }
     if(currentScreen === 'custHistory'){
       custHistBack();
       return;
@@ -1004,6 +1047,7 @@ function pageHome(btn){
       '<div class="tile" onclick="pageOrders(document.getElementById(\'nav-orders\'))"><b>📋 View Orders</b><span class="small muted">' + validOrdersCount + ' orders</span></div>' +
       '<div class="tile" onclick="pageTeam(document.getElementById(\'nav-team\'))"><b>👥 Team Members</b><span class="small muted">' + current().team.length + ' members</span></div>' +
       '<div class="tile" onclick="pageCustomers(document.getElementById(\'nav-customers\'))"><b>👤 Customers</b><span class="small muted">' + current().customers.length + ' customers</span></div>' +
+      '<div class="tile" onclick="pageReceived()"><b>📥 Goods Received</b><span class="small muted">Boxes, party and bill number</span></div>' +
       (canPackOrder() ? '<div class="tile" onclick="pageActivity()"><b>📊 Activity & Reports</b><span class="small muted">See who did what</span></div>' : '') +
       '<div class="tile" onclick="toggleDarkMode()"><b>🌙 Dark Mode</b><span class="small muted">' + (isDarkMode() ? 'ON - tap to turn off' : 'OFF - tap to turn on') + '</span></div>' +
     '</div>';
@@ -2009,6 +2053,7 @@ function actText(e){
     case "unpacked": return '\u21A9 ' + w + ' removed PACKED mark' + c;
     case "closed": return '\uD83D\uDD12 ' + w + ' closed order' + c;
     case "deleted": return '\uD83D\uDDD1 ' + w + ' deleted order' + c;
+    case "received": return '\uD83D\uDCE5 ' + w + ' recorded goods from ' + (e.c ? esc(e.c) : 'a party') + ' (' + esc(e.i || '') + ')';
     case "order_new": return '\uD83C\uDD95 ' + w + ' created order' + c + (e.i ? ' \u00B7 ' + esc(e.i) + ' items' : '');
     case "items_added": return '\u2795 ' + w + ' added ' + esc(e.i || "") + ' items' + c;
   }
@@ -2285,6 +2330,254 @@ function openBillShare(orderId){
     '<button class="btn secondary" style="margin-top:8px" onclick="doBillShare(\'' + esc(orderId) + '\', \'pdf\')">\uD83D\uDCC4 Share as PDF</button>' +
     '<button class="btn" style="margin-top:8px;background:#71809a" onclick="this.closest(\'.modal-overlay\').remove()">Cancel</button></div>';
   document.body.appendChild(modal);
+}
+
+/* ===== Goods Received register (boxes, party, bill number) ===== */
+var recvState = { date: null, view: "day", party: "", q: "" };
+function recvList(){ var b = current(); if(!Array.isArray(b.received)) b.received = []; return b.received; }
+function recvFmtDate(iso){
+  try { return new Date(iso + "T12:00:00").toLocaleDateString("en-IN", { weekday: "short", day: "2-digit", month: "short", year: "numeric" }); } catch(e){ return iso; }
+}
+function recvDayLabel(iso){
+  var today = getTodayIsoString();
+  if(iso === today) return "Today";
+  var d = new Date(); d.setDate(d.getDate() - 1);
+  var y = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  return iso === y ? "Yesterday" : recvFmtDate(iso);
+}
+function recvSum(list){ return list.reduce(function(s, r){ return s + (Number(r.boxes) || 0); }, 0); }
+function recvAvatar(name){
+  var n = String(name || "?"), h = 0;
+  for(var i = 0; i < n.length; i++) h = (h * 31 + n.charCodeAt(i)) % 360;
+  return '<div class="recv-av" style="background:hsl(' + h + ',75%,92%);color:hsl(' + h + ',55%,32%)">' + esc(n.trim().charAt(0).toUpperCase() || "?") + '</div>';
+}
+function recvRowHtml(r, showDate){
+  var meta = [];
+  if(showDate) meta.push(esc(recvFmtDate(r.date)));
+  meta.push(esc(r.by || "") + (r.time ? " \u00B7 " + esc(r.time) : ""));
+  var n = Number(r.boxes) || 0;
+  return '<div class="recv-row" onclick="recvOpenEntry(\'' + esc(r.id) + '\')">' + recvAvatar(r.party) +
+    '<div class="recv-body"><div class="recv-name">' + esc(r.party) + '</div>' +
+    '<div class="recv-meta">' + (r.bill ? '<span class="recv-chip">\uD83E\uDDFE ' + esc(r.bill) + '</span>' : '') + meta.join(" \u00B7 ") + '</div>' +
+    (r.note ? '<div class="recv-note">\uD83D\uDCDD ' + esc(r.note) + '</div>' : '') + '</div>' +
+    '<div class="recv-boxes"><b>' + n + '</b><span>BOX' + (n === 1 ? '' : 'ES') + '</span></div></div>';
+}
+function pageReceived(){
+  orderEntryActive = false;
+  document.body.classList.remove("order-entry-active");
+  currentScreen = "received";
+  active(document.getElementById("nav-home"));
+  document.getElementById("header-area").innerHTML = "";
+  window.scrollTo(0, 0);
+  if(!recvState.date) recvState.date = getTodayIsoString();
+  recvState.view = "day"; recvState.party = ""; recvState.q = "";
+  document.getElementById("page").innerHTML =
+    '<div class="recv-head" id="recvHead"><div class="recv-title"><span class="recv-ico">\uD83D\uDCE5</span>Goods Received</div>' +
+    '<div class="recv-search" id="recvSearchPill"><button class="recv-ibtn" onclick="recvToggleSearch()" aria-label="Search">\uD83D\uDD0D</button>' +
+    '<input id="recvSearch" placeholder="Party or bill number" autocomplete="off" oninput="recvSearchChanged(this.value)"><button class="recv-x" onclick="recvToggleSearch(false)" aria-label="Close search">\u2715</button></div>' +
+    '<button class="recv-ibtn" id="recvDots" onclick="recvToggleMenu(event)" aria-label="More options">\u22EE</button></div>' +
+    '<div id="recvContent"></div>' +
+    '<button class="recv-fab" onclick="recvEntryModal()" aria-label="Add goods received">\uFF0B</button>';
+  renderReceived();
+}
+function recvToggleSearch(force){
+  var pill = document.getElementById("recvSearchPill"), head = document.getElementById("recvHead"), dots = document.getElementById("recvDots");
+  if(!pill || !head) return;
+  var open = (typeof force === "boolean") ? force : !pill.classList.contains("open");
+  recvCloseMenu();
+  if(open){
+    pill.style.width = Math.max(120, head.clientWidth - dots.offsetWidth - 8) + "px";
+    pill.classList.add("open"); head.classList.add("searching");
+    setTimeout(function(){ try{ document.getElementById("recvSearch").focus(); }catch(e){} }, 120);
+  } else {
+    pill.style.width = "40px"; pill.classList.remove("open"); head.classList.remove("searching");
+    var inp = document.getElementById("recvSearch"); if(inp){ inp.value = ""; inp.blur(); }
+    if(recvState.q){ recvState.q = ""; renderReceived(); }
+  }
+}
+function recvCloseMenu(){ var m = document.getElementById("recvMenu"); if(m) m.remove(); var bg = document.getElementById("recvMenuBg"); if(bg) bg.remove(); }
+function recvToggleMenu(ev){
+  if(ev) ev.stopPropagation();
+  if(document.getElementById("recvMenu")){ recvCloseMenu(); return; }
+  var head = document.getElementById("recvHead"); if(!head) return;
+  var bg = document.createElement("div"); bg.id = "recvMenuBg"; bg.style.cssText = "position:fixed;inset:0;z-index:89"; bg.onclick = recvCloseMenu;
+  document.body.appendChild(bg);
+  var m = document.createElement("div"); m.id = "recvMenu"; m.className = "recv-menu";
+  var dayOn = recvState.view === "day", partyOn = recvState.view !== "day";
+  m.innerHTML = '<button onclick="recvSetView(\'day\')"><span>\uD83D\uDCC5 By Day</span>' + (dayOn ? '<span class="tick">\u2713</span>' : '') + '</button>' +
+    '<button onclick="recvSetView(\'party\')"><span>\uD83C\uDFED By Party</span>' + (partyOn ? '<span class="tick">\u2713</span>' : '') + '</button>' +
+    '<button onclick="recvCloseMenu(); recvShareCurrent()"><span>\uD83D\uDCE4 Share on WhatsApp</span></button>';
+  head.appendChild(m);
+}
+function recvSearchChanged(v){ recvState.q = String(v || "").trim().toLowerCase(); renderReceived(); }
+function recvSetView(v){ recvCloseMenu(); recvState.view = v; recvState.party = ""; renderReceived(); }
+function recvShiftDate(n){
+  var d = new Date((recvState.date || getTodayIsoString()) + "T12:00:00"); d.setDate(d.getDate() + n);
+  var iso = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  if(iso > getTodayIsoString()) return;
+  recvState.date = iso; renderReceived();
+}
+function recvOpenParty(name){ recvState.view = "partyDetail"; recvState.party = name; if(recvState.q){ recvToggleSearch(false); } renderReceived(); window.scrollTo(0, 0); }
+function recvBackFromParty(){ recvState.view = "party"; recvState.party = ""; renderReceived(); }
+function recvEmpty(msg){
+  return '<div class="recv-empty"><div class="big">\uD83D\uDCE6</div><p>' + msg + '</p></div>';
+}
+function renderReceived(){
+  var el = document.getElementById("recvContent"); if(!el || currentScreen !== "received") return;
+  var all = recvList().filter(Boolean), q = recvState.q, h = "", today = getTodayIsoString();
+  function byDateDesc(a, c){ return (c.date || "").localeCompare(a.date || "") || (c.createdAt || 0) - (a.createdAt || 0); }
+  function grouped(list){
+    var out = "", last = "";
+    list.slice().sort(byDateDesc).forEach(function(r){
+      if(r.date !== last){ last = r.date; out += '<div class="recv-day">' + esc(recvFmtDate(r.date)) + '</div>'; }
+      out += recvRowHtml(r, false);
+    });
+    return out;
+  }
+  if(recvState.view === "partyDetail"){
+    var key = normCust(recvState.party);
+    var list = all.filter(function(r){ return normCust(r.party) === key; });
+    h += '<button class="back-btn" style="margin:0 0 10px" onclick="recvBackFromParty()">\u2190 Parties</button>' +
+      '<div class="recv-row" style="cursor:default">' + recvAvatar(recvState.party) + '<div class="recv-body"><div class="recv-name" style="font-size:17px">' + esc(recvState.party) + '</div><div class="recv-meta">' + list.length + ' entr' + (list.length === 1 ? 'y' : 'ies') + '</div></div><div class="recv-boxes"><b>' + recvSum(list) + '</b><span>TOTAL</span></div></div>' +
+      (list.length ? grouped(list) : recvEmpty("No entries for this party."));
+  } else if(q){
+    var res = all.filter(function(r){ return (r.party || "").toLowerCase().indexOf(q) !== -1 || (r.bill || "").toLowerCase().indexOf(q) !== -1; });
+    h += (res.length ? '<div class="small muted" style="margin:0 0 4px">' + res.length + ' result' + (res.length === 1 ? '' : 's') + ' \u00B7 ' + recvSum(res) + ' boxes</div>' + grouped(res) : recvEmpty("Nothing found."));
+  } else if(recvState.view === "party"){
+    var parties = {};
+    all.forEach(function(r){ var k = normCust(r.party); if(!k) return; var p = parties[k] = parties[k] || { name: k, boxes: 0, n: 0, last: "" }; p.boxes += Number(r.boxes) || 0; p.n++; if((r.date || "") > p.last) p.last = r.date; });
+    var arr = Object.keys(parties).map(function(k){ return parties[k]; }).sort(function(a, c){ return (c.last || "").localeCompare(a.last || ""); });
+    h += '<div class="recv-day" style="margin-top:0">\uD83C\uDFED By Party</div>' + (arr.length ? arr.map(function(p){
+      return '<div class="recv-row" data-party="' + esc(p.name) + '" onclick="recvOpenParty(this.getAttribute(\'data-party\'))">' + recvAvatar(p.name) + '<div class="recv-body"><div class="recv-name">' + esc(p.name) + '</div><div class="recv-meta">' + p.n + ' entr' + (p.n === 1 ? 'y' : 'ies') + ' \u00B7 last: ' + esc(recvFmtDate(p.last)) + '</div></div><div class="recv-boxes"><b>' + p.boxes + '</b><span>TOTAL</span></div></div>';
+    }).join("") : recvEmpty("No entries yet.<br>Tap + when goods arrive."));
+  } else {
+    var day = all.filter(function(r){ return r.date === recvState.date; }).sort(function(a, c){ return (a.createdAt || 0) - (c.createdAt || 0); });
+    h += '<div class="recv-datebar"><button onclick="recvShiftDate(-1)" aria-label="Previous day">\u25C0</button><div class="dl"><b>' + esc(recvDayLabel(recvState.date)) + '</b><span>' + esc(recvFmtDate(recvState.date)) + '</span></div><button onclick="recvShiftDate(1)" aria-label="Next day" ' + (recvState.date >= today ? 'disabled' : '') + '>\u25B6</button></div>' +
+      (day.length ? day.map(function(r){ return recvRowHtml(r, false); }).join("") : recvEmpty("No goods recorded for this day.<br>Tap + to add an entry."));
+  }
+  el.innerHTML = h + '<div style="height:70px"></div>';
+}
+function recvShareCurrent(){
+  if(recvState.view === "partyDetail") return recvSharePartyText();
+  if(recvState.q){
+    var q = recvState.q, res = recvList().filter(function(r){ return r && ((r.party || "").toLowerCase().indexOf(q) !== -1 || (r.bill || "").toLowerCase().indexOf(q) !== -1); }).sort(function(a, c){ return (c.date || "").localeCompare(a.date || ""); });
+    if(!res.length){ showToast("Nothing to share"); return; }
+    var lines = ["*Goods Received - search: " + q + "*", ""];
+    res.forEach(function(r){ lines.push(recvFmtDate(r.date) + " - " + r.party + ": " + r.boxes + " box" + (Number(r.boxes) === 1 ? "" : "es") + (r.bill ? " (Bill " + r.bill + ")" : "")); });
+    lines.push("", "*Total: " + recvSum(res) + " boxes*");
+    return recvShareText(lines.join("\n"));
+  }
+  if(recvState.view === "party"){
+    var tot = {}; recvList().forEach(function(r){ if(!r) return; var k = normCust(r.party); tot[k] = (tot[k] || 0) + (Number(r.boxes) || 0); });
+    var ks = Object.keys(tot); if(!ks.length){ showToast("Nothing to share"); return; }
+    var l2 = ["*Goods Received - By Party*", ""]; ks.sort(function(a, c){ return tot[c] - tot[a]; }).forEach(function(k){ l2.push(k + ": " + tot[k] + " boxes"); });
+    return recvShareText(l2.join("\n"));
+  }
+  var dayList = recvList().filter(function(r){ return r && r.date === recvState.date; });
+  if(!dayList.length){ showToast("No entries for this day"); return; }
+  recvShareDayText();
+}
+function recvShareText(txt){
+  try { navigator.clipboard.writeText(txt); } catch(e){}
+  window.location.href = "whatsapp://send?text=" + encodeURIComponent(txt);
+}
+function recvShareDayText(){
+  var day = recvList().filter(function(r){ return r && r.date === recvState.date; }).sort(function(a, c){ return (a.createdAt || 0) - (c.createdAt || 0); });
+  var lines = ["*Goods Received - " + recvFmtDate(recvState.date) + "*", ""];
+  day.forEach(function(r){ lines.push(r.party + " - " + r.boxes + " box" + (Number(r.boxes) === 1 ? "" : "es") + (r.bill ? " (Bill " + r.bill + ")" : "")); });
+  lines.push("", "*Total: " + recvSum(day) + " boxes*");
+  recvShareText(lines.join("\n"));
+}
+function recvSharePartyText(){
+  var key = normCust(recvState.party);
+  var list = recvList().filter(function(r){ return r && normCust(r.party) === key; }).sort(function(a, c){ return (c.date || "").localeCompare(a.date || ""); });
+  var lines = ["*" + recvState.party + " - Goods Received*", ""];
+  list.forEach(function(r){ lines.push(recvFmtDate(r.date) + ": " + r.boxes + " box" + (Number(r.boxes) === 1 ? "" : "es") + (r.bill ? " (Bill " + r.bill + ")" : "")); });
+  lines.push("", "*Total: " + recvSum(list) + " boxes*");
+  recvShareText(lines.join("\n"));
+}
+function recvOpenEntry(id){
+  var r = recvList().find(function(x){ return x && x.id === id; });
+  if(!r) return;
+  var rows = [["Party", r.party], ["Boxes", r.boxes], ["Bill number", r.bill], ["Date", recvFmtDate(r.date)], ["Received by", (r.by || "") + (r.time ? " \u00B7 " + r.time : "")], ["Bill amount", r.amount], ["Transport", r.vehicle], ["Note", r.note]]
+    .filter(function(x){ return x[1] !== undefined && x[1] !== null && String(x[1]) !== ""; })
+    .map(function(x){ return '<div style="display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid #edf2f7;font-size:14px"><span class="muted">' + esc(x[0]) + '</span><b style="text-align:right;overflow-wrap:anywhere">' + esc(x[1]) + '</b></div>'; }).join("");
+  var modal = document.createElement("div");
+  modal.className = "modal-overlay";
+  modal.innerHTML = '<div class="modal" style="max-height:90dvh;overflow-y:auto"><h3 style="margin-bottom:6px">\uD83D\uDCE5 Goods Received</h3>' + rows +
+    (canPackOrder() ? '<div style="display:flex;gap:8px;margin-top:14px"><button class="btn secondary" style="margin:0;flex:1" onclick="this.closest(\'.modal-overlay\').remove(); recvEntryModal(\'' + esc(r.id) + '\')">\u270F Edit</button><button class="btn secondary" style="margin:0;flex:1;color:#e53e3e;border-color:#e53e3e" onclick="recvDelete(\'' + esc(r.id) + '\')">\uD83D\uDDD1 Delete</button></div>' : '') +
+    '<button class="btn" style="margin-top:10px;background:#71809a" onclick="this.closest(\'.modal-overlay\').remove()">Close</button></div>';
+  document.body.appendChild(modal);
+}
+function recvDelete(id){
+  if(!canPackOrder()){ showToast("Only the Owner or an Admin can delete entries"); return; }
+  document.querySelectorAll(".modal-overlay").forEach(function(m){ m.remove(); });
+  confirmAction("Delete this entry?", "This goods received entry will be removed for everyone.", function(){
+    var b = current(), i = recvList().findIndex(function(x){ return x && x.id === id; });
+    if(i === -1) return;
+    (b.removedIds = b.removedIds || []).push(id);
+    b.received.splice(i, 1);
+    save();
+    showToast("Entry deleted");
+    renderReceived();
+  });
+}
+function recvEntryModal(id){
+  var existing = id ? recvList().find(function(x){ return x && x.id === id; }) : null;
+  if(id && !existing) return;
+  if(existing && !canPackOrder()){ showToast("Only the Owner or an Admin can edit entries"); return; }
+  var parties = {}; recvList().forEach(function(r){ if(r && r.party) parties[normCust(r.party)] = 1; });
+  var modal = document.createElement("div");
+  modal.className = "modal-overlay";
+  modal.innerHTML = '<div class="modal" style="max-height:92dvh;overflow-y:auto;-webkit-overflow-scrolling:touch"><h3 style="margin-bottom:10px">' + (existing ? '\u270F Edit Entry' : '\uD83D\uDCE5 Goods Received') + '</h3>' +
+    '<label class="small muted">Party (received from)</label><input id="rcParty" class="uppercase-input" list="rcPartyList" autocomplete="off" style="margin:4px 0 8px"><datalist id="rcPartyList">' + Object.keys(parties).map(function(k){ return '<option value="' + esc(k) + '">'; }).join("") + '</datalist>' +
+    '<div style="display:flex;gap:8px"><div style="flex:1"><label class="small muted">Boxes</label><input id="rcBoxes" type="number" inputmode="numeric" min="1" style="margin:4px 0 8px"></div>' +
+    '<div style="flex:1.4"><label class="small muted">Bill number</label><input id="rcBill" style="margin:4px 0 8px"></div></div>' +
+    '<label class="small muted">Date</label><input id="rcDate" type="date" style="margin:4px 0 8px">' +
+    '<div style="display:flex;gap:8px"><div style="flex:1"><label class="small muted">Bill amount (optional)</label><input id="rcAmount" inputmode="decimal" style="margin:4px 0 8px"></div>' +
+    '<div style="flex:1"><label class="small muted">Transport (optional)</label><input id="rcVehicle" style="margin:4px 0 8px"></div></div>' +
+    '<label class="small muted">Note (optional)</label><input id="rcNote" style="margin:4px 0 14px">' +
+    '<div style="display:flex;gap:10px"><button class="btn secondary" style="margin:0;flex:1" onclick="this.closest(\'.modal-overlay\').remove()">Cancel</button><button class="btn" style="margin:0;flex:1" id="rcSaveBtn">Save</button></div></div>';
+  document.body.appendChild(modal);
+  var today = getTodayIsoString();
+  document.getElementById("rcDate").max = today;
+  document.getElementById("rcDate").value = existing ? existing.date : (recvState.view === "day" && recvState.date ? recvState.date : today);
+  if(existing){
+    document.getElementById("rcParty").value = existing.party || ""; document.getElementById("rcBoxes").value = existing.boxes || "";
+    document.getElementById("rcBill").value = existing.bill || ""; document.getElementById("rcAmount").value = existing.amount || "";
+    document.getElementById("rcVehicle").value = existing.vehicle || ""; document.getElementById("rcNote").value = existing.note || "";
+  }
+  document.getElementById("rcSaveBtn").onclick = function(){
+    var party = normCust(document.getElementById("rcParty").value);
+    var boxes = Number(document.getElementById("rcBoxes").value);
+    var bill = document.getElementById("rcBill").value.trim();
+    var date = document.getElementById("rcDate").value || today;
+    if(!party){ alert("Please enter the party name."); return; }
+    if(!Number.isSafeInteger(boxes) || boxes < 1 || boxes > 100000){ alert("Boxes must be a whole number between 1 and 100000."); return; }
+    if(date > today){ alert("Date cannot be in the future."); return; }
+    var dup = recvList().find(function(r){ return r && bill && (!existing || r.id !== existing.id) && normCust(r.party) === party && String(r.bill || "").trim().toLowerCase() === bill.toLowerCase(); });
+    function commit(){
+      var me = getCurrentMember(), who = (me && me.name) || data.currentUser || "Member";
+      var d = new Date();
+      var rec = existing || { id: genId("RCV"), createdAt: Date.now(), by: who, time: d.toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" }).toUpperCase() };
+      rec.party = party; rec.boxes = boxes; rec.bill = bill; rec.date = date;
+      rec.amount = document.getElementById("rcAmount").value.trim(); rec.vehicle = document.getElementById("rcVehicle").value.trim(); rec.note = document.getElementById("rcNote").value.trim();
+      rec.updatedAt = Date.now();
+      if(!existing) recvList().push(rec);
+      if(!existing){
+        logAct("received", { id: "", customer: party }, boxes + " boxes" + (bill ? " \u00B7 Bill " + bill : ""));
+        pushTeamNotification("\uD83D\uDCE5 " + boxes + " box" + (boxes === 1 ? "" : "es") + " received from " + party + (bill ? " (Bill " + bill + ")" : "") + " - recorded by " + who + ".");
+      }
+      save();
+      modal.remove();
+      recvState.date = date;
+      showToast(existing ? "Entry updated" : "Saved");
+      renderReceived();
+    }
+    if(dup){ confirmAction("Same bill already entered", "Bill " + bill + " from " + party + " is already recorded (" + dup.boxes + " boxes). Save this as another entry anyway?", commit); }
+    else commit();
+  };
+  setTimeout(function(){ try{ document.getElementById("rcParty").focus(); }catch(e){} }, 80);
 }
 
 function canPackOrder(){
@@ -3409,7 +3702,7 @@ function editCustomerModal(custId){
     if(newKey !== oldKey && (current().customers || []).some(function(x){ return x && x.id !== cust.id && normCust(x.name) === newKey; })){
       alert("Another customer with this name already exists."); return;
     }
-    cust.name = name; cust.phone = phone; cust.address = addr;
+    cust.name = name; cust.phone = phone; cust.address = addr; cust.updatedAt = Date.now();
     save();
     modal.remove();
     var affected = (current().orders || []).filter(function(o){ return o && normCust(o.customer) === oldKey; });
