@@ -94,19 +94,18 @@ input:focus,select:focus,textarea:focus{border-color:#1670e8}
 
 /* Tabs & Header Controls */
 .order-header-row{display:flex;align-items:center;gap:6px;margin-bottom:12px;position:relative}
-.tab-bar{display:flex;gap:4px;background:#e2e8f0;padding:3px;border-radius:12px;flex:1}
+.tab-bar{display:flex;gap:4px;background:#e2e8f0;padding:3px;border-radius:12px;flex:1;min-width:0;transition:opacity .2s ease}
 .tab-btn{flex:1;border:none;padding:8px 4px;border-radius:8px;font-size:12px;font-weight:700;color:#4a5568;background:transparent;transition:all 0.2s}
 .tab-btn.active{background:white;color:#1670e8;box-shadow:0 2px 6px rgba(0,0,0,0.06)}
-.compact-search-box{display:flex;align-items:center;justify-content:flex-start;background:#eef2f9;border:1px solid transparent;border-radius:20px;padding:0;width:40px;height:40px;flex:0 0 40px;overflow:hidden;transition:width .3s ease,flex-basis .3s ease,background .2s;box-sizing:border-box}
+.compact-search-box{display:flex;align-items:center;justify-content:flex-start;background:#eef2f9;border:1px solid transparent;border-radius:20px;padding:0;width:40px;height:40px;flex-shrink:0;overflow:hidden;transition:width .3s ease;box-sizing:border-box}
 .compact-search-box .order-search-toggle{width:38px;height:38px;flex:0 0 38px;border:0;border-radius:50%;background:transparent;font-size:18px;display:grid;place-items:center;padding:0;color:#2d3748}
-.compact-search-box input{border:none;margin:0;padding:0;font-size:14px;background:transparent;width:0;min-width:0;opacity:0;outline:0;transition:opacity .15s;width:100%}
+.compact-search-box input{border:none;margin:0;padding:0;font-size:14px;background:transparent;width:0;min-width:0;opacity:0;outline:0;transition:opacity .15s;flex:1}
 .compact-search-box .order-search-close{display:none;border:0;background:transparent;color:#718096;font-size:16px;padding:0 10px;height:38px;flex:0 0 auto}
-.compact-search-box.open{width:100%;flex:1 1 auto;min-width:0;border-color:#ccd8e8;padding-right:2px}
-.compact-search-box.open input{width:100%;opacity:1;min-width:0;padding:0 3px}
+.compact-search-box.open{border-color:#ccd8e8;padding-right:2px}
+.compact-search-box.open input{opacity:1;min-width:0;padding:0 3px}
 .compact-search-box.open .order-search-close{display:block}
-.order-header-row.searching .tab-bar{display:none}
-.order-header-row.searching .compact-search-box{margin-left:0;width:100%;flex:1 1 100%;min-width:0}
-.order-header-row.searching #menuAnchor{display:none}
+.order-header-row.searching .tab-bar{opacity:0;pointer-events:none}
+/* 3-dots stays visible - same as Goods Received */
 html.dark .compact-search-box{background:#202b42;border-color:#2c3850}
 html.dark .compact-search-box .order-search-toggle{color:#e3e9f5}
 html.dark .compact-search-box input{color:#e3e9f5}
@@ -1451,15 +1450,24 @@ function pageOrders(btn){
 }
 
 function toggleOrderSearch(force){
-  var pill=document.getElementById("orderSearchPill"), row=pill&&pill.closest(".order-header-row"), input=document.getElementById("orderSearch");
-  if(!pill||!row) return;
-  var open=(typeof force==="boolean")?force:!pill.classList.contains("open");
+  var pill = document.getElementById("orderSearchPill"),
+      row = pill && pill.closest(".order-header-row"),
+      input = document.getElementById("orderSearch"),
+      menu = document.getElementById("menuAnchor");
+  if(!pill || !row) return;
+  var open = (typeof force === "boolean") ? force : !pill.classList.contains("open");
   if(open){
-    pill.classList.add("open"); row.classList.add("searching");
-    setTimeout(function(){try{input.focus();}catch(e){}},120);
-  }else{
-    pill.classList.remove("open"); row.classList.remove("searching");
-    if(input){input.value="";input.blur();filterOrders();}
+    // Same animation style as Goods Received search
+    var menuW = (menu && menu.offsetWidth) ? menu.offsetWidth + 8 : 48;
+    pill.style.width = Math.max(120, row.clientWidth - menuW - 8) + "px";
+    pill.classList.add("open");
+    row.classList.add("searching");
+    setTimeout(function(){ try{ input.focus(); }catch(e){} }, 120);
+  } else {
+    pill.style.width = "40px";
+    pill.classList.remove("open");
+    row.classList.remove("searching");
+    if(input){ input.value = ""; input.blur(); filterOrders(); }
   }
 }
 
