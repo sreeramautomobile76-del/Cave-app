@@ -272,6 +272,7 @@ html[data-cave-theme="blue"]{--cave-accent:#2878ed;--cave-accent2:#54a4ff;--cave
 
 /* Apply selected accent consistently across Team, Customers, Members and other sections */
 #page h2,#page .section-title{color:var(--cave-ink)}
+#page .home-hero h2,.home-hero h2{color:#fff!important}
 #page .list{border-color:color-mix(in srgb,var(--cave-accent) 24%,#e2e8f0)!important;background:color-mix(in srgb,var(--cave-soft) 42%,white)!important;transition:border-color .2s,background .2s}
 #page .list:active{border-color:var(--cave-accent)!important}
 #page .btn:not(.secondary):not(.danger):not(.success):not(.warning){background:linear-gradient(135deg,var(--cave-accent),var(--cave-accent2))!important;color:#fff!important}
@@ -295,7 +296,7 @@ html[data-cave-theme="purple"]{--cave-strip:#7656d6}
 .theme-setting{padding:12px;border:1px solid #e2e8f0;border-radius:14px;margin:0 0 12px}.theme-options{display:flex;gap:7px;margin-top:10px}.theme-choice{flex:1;padding:9px 4px;border-radius:10px;border:1px solid #dbe3ef;background:#fff;font-size:12px;font-weight:800}.theme-choice.blue{color:#2878ed}.theme-choice.green{color:#15966b}.theme-choice.purple{color:#7656d6}html.dark .theme-setting{border-color:#2c3850}html.dark .theme-choice{background:#202b42;border-color:#35435d}
 .dashboard-head{background:linear-gradient(135deg,var(--cave-ink),var(--cave-accent))!important;padding:27px 20px 25px;border-radius:0 0 28px 28px;box-shadow:0 10px 24px color-mix(in srgb,var(--cave-accent) 24%,transparent)}
 .dashboard-title{display:flex;align-items:center;justify-content:space-between;margin:18px 2px 12px}.dashboard-title h2{font-size:21px;margin:0;letter-spacing:-.4px}.dashboard-kicker{font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;opacity:.75;margin-bottom:5px}
-.home-hero{position:relative;overflow:hidden;color:#fff;border-radius:24px;padding:20px;margin:16px 0 20px;background:linear-gradient(135deg,var(--cave-ink),var(--cave-accent) 70%,var(--cave-accent2));box-shadow:0 10px 25px color-mix(in srgb,var(--cave-accent) 22%,transparent)}.home-hero:after{content:"";position:absolute;width:170px;height:170px;border:26px solid #ffffff12;border-radius:50%;right:-65px;top:-68px;pointer-events:none}.home-hero-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;position:relative;z-index:1}.home-hero h2{font-size:22px;margin:3px 0 4px;letter-spacing:-.5px}.home-hero .date{font-size:12px;opacity:.8}.home-live{font-size:10px;font-weight:800;letter-spacing:.5px;background:#ffffff20;border:1px solid #ffffff30;border-radius:999px;padding:7px 9px;white-space:nowrap}
+.home-hero{position:relative;overflow:hidden;color:#fff;border-radius:24px;padding:20px;margin:16px 0 20px;background:linear-gradient(135deg,var(--cave-ink),var(--cave-accent) 70%,var(--cave-accent2));box-shadow:0 10px 25px color-mix(in srgb,var(--cave-accent) 22%,transparent)}.home-hero:after{content:"";position:absolute;width:170px;height:170px;border:26px solid #ffffff12;border-radius:50%;right:-65px;top:-68px;pointer-events:none}.home-hero-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;position:relative;z-index:1}.home-hero h2{font-size:22px;margin:3px 0 4px;letter-spacing:-.5px;color:#fff!important}.home-hero .date{font-size:12px;opacity:.8}.home-live{font-size:10px;font-weight:800;letter-spacing:.5px;background:#ffffff20;border:1px solid #ffffff30;border-radius:999px;padding:7px 9px;white-space:nowrap}
 .home-stats{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:18px;position:relative;z-index:1}.home-stat{background:#ffffff17;border:1px solid #ffffff20;border-radius:16px;padding:12px 13px;backdrop-filter:blur(6px)}.home-stat .ico{font-size:17px}.home-stat b{display:block;font-size:25px;line-height:1.25;margin:3px 0}.home-stat span{font-size:11px;opacity:.86;font-weight:600}
 .tilegrid{gap:11px}.tile{border-radius:18px;padding:15px;box-shadow:0 4px 14px #172b4d08;transition:transform .18s,border-color .18s,box-shadow .18s;min-height:105px}.tile:active{transform:scale(.985)}.tile .tile-ico{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;font-size:21px;margin-bottom:12px;background:var(--cave-soft)}.tile b{font-size:13px;line-height:1.35;margin-bottom:5px}.tile .small{font-size:11px;line-height:1.4}
 .order-card-click{border-radius:15px!important;padding:10px 11px!important;margin-bottom:9px!important;box-shadow:0 3px 10px #172b4d08!important;border-color:#e5ebf4!important;transition:transform .18s,border-color .18s!important}.order-card-click:active{transform:scale(.992)}.order-customer-row{display:flex;align-items:center;gap:8px;min-width:0}.order-avatar{width:34px;height:34px;flex-shrink:0;border-radius:11px;display:grid;place-items:center;font-size:14px;font-weight:900;color:var(--cave-accent);background:var(--cave-soft);border:1px solid color-mix(in srgb,var(--cave-accent) 12%,white)}.order-card-click .order-customer-row b{font-size:14px!important;line-height:1.25}.order-card-click .inline-bars{gap:4px!important;margin-top:3px!important}.order-card-click .bar-pill{padding:2px 5px!important;font-size:10px!important;line-height:1.2!important}.order-card-click .small{line-height:1.25}.order-progress{margin-top:8px}.order-progress-meta{display:flex;justify-content:space-between;gap:8px;font-size:10px;font-weight:700;color:#71809a;margin-bottom:4px}.order-progress-track{height:4px;border-radius:999px;background:#edf1f7;overflow:hidden}.order-progress-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--cave-accent),var(--cave-accent2));transition:width .35s ease}.order-progress-fill.done{background:linear-gradient(90deg,#16a36a,#55d6a0)}
@@ -1325,6 +1326,47 @@ function pageStock(btn){
   },{once:true});
 }
 
+
+function getDailyQuote(){
+  var quotes = [
+    "Love grows when it is shared.",
+    "Life is short. Make it sweet.",
+    "Be kind. It costs nothing.",
+    "Happiness is found in small moments.",
+    "Love yourself a little more today.",
+    "A soft heart is a strong heart.",
+    "Live simply. Love deeply.",
+    "Every sunrise is a new chance.",
+    "Peace begins with a smile.",
+    "The best is yet to come.",
+    "Where there is love, there is life.",
+    "Take it easy. Life is not a race.",
+    "Cherish the people who stay.",
+    "Bloom where you are planted.",
+    "A grateful heart is a happy heart.",
+    "Love is the quiet strength.",
+    "Breathe. You are doing fine.",
+    "Good vibes only, always.",
+    "Home is where the heart is.",
+    "Smile. It looks good on you.",
+    "Patience is also a form of love.",
+    "Dream big. Start small.",
+    "You are enough, just as you are.",
+    "Let go of what you cannot control.",
+    "Kind words can change a day.",
+    "Life is better with laughter.",
+    "Hold on to hope.",
+    "Love freely. Live fully.",
+    "Today is a gift. Open it gently.",
+    "Be the reason someone feels loved.",
+    "Slow down and enjoy the journey."
+  ];
+  var d = getTodayIsoString();
+  var h = 0;
+  for(var i = 0; i < d.length; i++) h = ((h * 31) + d.charCodeAt(i)) | 0;
+  return quotes[Math.abs(h) % quotes.length];
+}
+
 function pageHome(btn){
   orderEntryActive = false;
   document.body.classList.remove("order-entry-active");
@@ -1354,7 +1396,7 @@ function pageHome(btn){
   let receivedToday = (typeof recvList === "function" ? recvList() : []).filter(function(r){ return r && (r.date === todayIso || r.date === todayLabel); }).reduce(function(n,r){ return n + (Number(r.boxes)||0); },0);
   function tile(icon,title,sub,onclick,accent){ return '<div class="tile" onclick="'+onclick+'"><div class="tile-ico" style="color:'+accent+';background:'+accent+'18">'+icon+'</div><b>'+title+'</b><span class="small muted" style="display:block">'+sub+'</span></div>'; }
   document.getElementById("page").innerHTML =
-    '<div class="home-hero"><div class="home-hero-top"><div><div class="dashboard-kicker">BUSINESS OVERVIEW</div><h2>Good day 👋</h2><div class="date">' + esc(todayLabel) + ' · ' + esc(b.name) + '</div></div><div class="home-live">● LIVE DASHBOARD</div></div>' +
+    '<div class="home-hero"><div class="home-hero-top"><div><div class="dashboard-kicker">BUSINESS OVERVIEW</div><h2>' + esc(getDailyQuote()) + '</h2><div class="date">' + esc(todayLabel) + ' · ' + esc(b.name) + '</div></div><div class="home-live">● LIVE DASHBOARD</div></div>' +
       '<div class="home-stats">' +
         '<div class="home-stat"><div class="ico">📋</div><b>' + todayOrders.length + '</b><span>Today’s orders</span></div>' +
         '<div class="home-stat"><div class="ico">⏳</div><b>' + pendingItems + '</b><span>Pending items</span></div>' +
@@ -1751,6 +1793,33 @@ function markSelectedUrgent(orderId){
 function urgentTag(item){ return (item && item.urgent && !item.completed) ? ' <span class="urgent-badge">URGENT</span>' : ''; }
 
 function it_u(o){ return (o.items || []).filter(function(x){ return x && x.urgent && !x.completed && !x.noStock; }).length; }
+
+function normSearch(s){
+  return String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, "");
+}
+function textMatchesQuery(text, q){
+  if(!q) return true;
+  var t = String(text || "").toLowerCase();
+  var qq = String(q || "").toLowerCase().trim();
+  if(!qq) return true;
+  if(t.indexOf(qq) !== -1) return true;
+  var nt = normSearch(t), nq = normSearch(qq);
+  return !!(nq && nt.indexOf(nq) !== -1);
+}
+function extractUrgentFromName(name){
+  var n = String(name || "").trim();
+  var urgent = false;
+  // Match URGENT / ARGENT as whole tokens (common typo), remove from name.
+  var cleaned = n.replace(/(?:^|[\s,;:()\-_/]+)(?:URGENT|ARGENT)(?=$|[\s,;:()\-_/]+)/gi, " ");
+  if(cleaned !== n) urgent = true;
+  cleaned = cleaned.replace(/\s+/g, " ").trim();
+  // Also handle leading/trailing with punctuation like (URGENT)
+  var cleaned2 = cleaned.replace(/^\s*[\(\[\{]?\s*(?:URGENT|ARGENT)\s*[\)\]\}]?\s*/i, "").replace(/\s*[\(\[\{]?\s*(?:URGENT|ARGENT)\s*[\)\]\}]?\s*$/i, "").trim();
+  if(cleaned2 !== cleaned) urgent = true;
+  cleaned = cleaned2.replace(/\s+/g, " ").trim();
+  return { name: cleaned, urgent: urgent };
+}
+
 function normCust(s){ return String(s || "").replace(/\s+/g, " ").trim().toUpperCase(); }
 function customerNameLink(o, display){
   if(!o || !o.customer || o.customer === "undefined" || !normCust(o.customer)) return display;
@@ -1815,14 +1884,16 @@ function openCustomerHistory(name){
 function hlText(text, q){
   var s = String(text == null ? "" : text);
   if(!q) return esc(s);
-  var i = s.toLowerCase().indexOf(q);
-  if(i === -1) return esc(s);
-  return esc(s.slice(0, i)) + '<mark class="hl">' + esc(s.slice(i, i + q.length)) + '</mark>' + esc(s.slice(i + q.length));
+  var i = s.toLowerCase().indexOf(String(q).toLowerCase());
+  if(i !== -1) return esc(s.slice(0, i)) + '<mark class="hl">' + esc(s.slice(i, i + q.length)) + '</mark>' + esc(s.slice(i + q.length));
+  // Space-insensitive highlight: mark whole text when collapsed form matches
+  if(textMatchesQuery(s, q)) return '<mark class="hl">' + esc(s) + '</mark>';
+  return esc(s);
 }
 
 function searchHitsHtml(o, q){
   if(!q) return "";
-  var hits = (o.items || []).filter(function(i){ return i && (((i.name || "").toLowerCase().indexOf(q) !== -1) || ((i.comment || "").toLowerCase().indexOf(q) !== -1)); });
+  var hits = (o.items || []).filter(function(i){ return i && (textMatchesQuery(i.name, q) || textMatchesQuery(i.comment, q)); });
   if(!hits.length) return "";
   var shown = hits.slice(0, 8);
   var html = '<div class="search-hits">' + shown.map(function(i){
@@ -2110,9 +2181,9 @@ function filterOrders(){
     if(currentOrderTab === 'pending' && isFinished) return false;
     if(currentOrderTab === 'completed' && !isFinished) return false;
 
-    let customerName = (o.customer || "").toLowerCase();
-    let orderBy = (o.orderBy || "").toLowerCase();
-    let matchesQuery = !query || customerName.indexOf(query) !== -1 || orderBy.indexOf(query) !== -1 || (o.items || []).some(function(i){ return i && (((i.name || "").toLowerCase().indexOf(query) !== -1) || ((i.comment || "").toLowerCase().indexOf(query) !== -1)); });
+    let customerName = (o.customer || "");
+    let orderBy = (o.orderBy || "");
+    let matchesQuery = !query || textMatchesQuery(customerName, query) || textMatchesQuery(orderBy, query) || (o.items || []).some(function(i){ return i && (textMatchesQuery(i.name, query) || textMatchesQuery(i.comment, query)); });
     
     let matchesDate = true;
     if(selectedDateFilter) {
@@ -3211,12 +3282,19 @@ function adoptOrder(orderId){
   let b = current();
   let o = b.orders.find(x => x && x.id === orderId);
   if(!o) return;
-  o.adoptedBy = userName;
-  logAct("adopted", o);
-  save();
-  try { if(hasFB) db.ref("adopt/" + b.id + "/" + orderId).set({ name: userName, ts: presenceTs() }); } catch(e){}
-  pushTeamNotification(userName + " adopted order for " + ((o.customer && o.customer !== "undefined") ? o.customer : "Order"));
-  openOrderDetail(orderId);
+  let cust = (o.customer && o.customer !== "undefined") ? o.customer : "this order";
+  confirmAction("Adopt Order?", "Take responsibility for " + cust + "? You will be marked as the person handling this order.", function(){
+    let b2 = current();
+    let o2 = b2.orders.find(x => x && x.id === orderId);
+    if(!o2) return;
+    if(o2.adoptedBy){ showToast("Already adopted by " + o2.adoptedBy); openOrderDetail(orderId); return; }
+    o2.adoptedBy = userName;
+    logAct("adopted", o2);
+    save();
+    try { if(hasFB) db.ref("adopt/" + b2.id + "/" + orderId).set({ name: userName, ts: presenceTs() }); } catch(e){}
+    pushTeamNotification(userName + " adopted order for " + cust);
+    openOrderDetail(orderId);
+  });
 }
 
 function forceCloseOrder(orderId){
@@ -3254,14 +3332,22 @@ function addItemsToExistingOrderModal(orderId){
 
   document.getElementById("saveAddItemsBtn").onclick = function(){
     let rows = Array.from(document.querySelectorAll("#modalItemBox .item-row"));
-    let newItems = rows.map(r => ({
-      id: genId("ITM"),
-      name: r.querySelector(".item-name").value.trim().toUpperCase(),
-      qty: Number(r.querySelector(".item-qty").value) || 1,
-      unit: r.querySelector(".item-unit").value.toUpperCase(),
-      completed: false,
-      ordered: false
-    })).filter(x => x.name);
+    let newItems = rows.map(r => {
+      var extracted = extractUrgentFromName(r.querySelector(".item-name").value.trim().toUpperCase());
+      var item = {
+        id: genId("ITM"),
+        name: extracted.name,
+        qty: Number(r.querySelector(".item-qty").value) || 1,
+        unit: (r.querySelector(".item-unit").value || "PCS").toUpperCase(),
+        completed: false,
+        ordered: false
+      };
+      if(extracted.urgent || r.dataset.urgent === "1"){
+        item.urgent = true;
+        item.urgentBy = ((typeof getCurrentMember === "function" && getCurrentMember()) || {}).name || data.currentUser || "Member";
+      }
+      return item;
+    }).filter(x => x.name);
 
     if(!newItems.length){ alert("Please enter at least 1 valid item."); return; }
 
@@ -3284,11 +3370,23 @@ function addItemsToExistingOrderModal(orderId){
 function parseAddItemsPaste(){
   const area=document.getElementById('addItemsPasteBox'); const box=document.getElementById('modalItemBox'); if(!area||!box) return;
   const raw=area.value.trim(); if(!raw){alert('Paste copied item list first.');return;}
-  const lines=raw.split(/\r?\n|;/).map(x=>x.replace(/^\s*(?:[*•–-]+\s*|\d{1,3}[.)]\s+)/,'').trim()).filter(Boolean);
+  let lines=raw.split(/\r?\n|;/).map(x=>x.replace(/^\s*(?:[*•–-]+\s*|\d{1,3}[.)]\s+)/,'').trim()).filter(Boolean);
+  // Skip a top customer/header line that has no quantity (same rule as new-order paste).
+  if(lines.length){
+    let first = lines[0];
+    let looksLikeQtyLine = /\s+(\d+)\s*(pcs|pc|pkt|items|box|set|nos|kg|x)?$/i.test(first) || /\s+[x×]\s*(\d+)$/i.test(first) || /\s+-\s*(\d+)$/.test(first);
+    if(!looksLikeQtyLine) lines = lines.slice(1);
+  }
   let added=0; lines.forEach(line=>{ let name=line,qty=1,unit='PCS';
     let m=line.match(/\s+[x×]\s*(\d+)$/i) || line.match(/\s+(\d+)\s*(PCS|PC|PKT|ITEMS|BOX|SET|NOS|KG)?$/i);
     if(m){ qty=parseInt(m[1],10)||1; if(m[2] && !/^x$/i.test(m[2])) unit=m[2].toUpperCase(); name=line.slice(0,m.index).trim(); }
-    if(name){ const row=document.createElement('div'); row.className='item-row'; row.innerHTML='<input class="item-name uppercase-input" placeholder="Item name" value="'+esc(name.toUpperCase())+'"><input class="item-qty" type="text" inputmode="numeric" value="'+qty+'"><input class="item-unit uppercase-input" placeholder="Unit" value="'+esc(unit)+'"><button class="remove-item" type="button">×</button>'; box.appendChild(row); const remove=row.querySelector('.remove-item'); remove.onclick=()=>row.remove(); added++; }
+    if(name){
+      let u = extractUrgentFromName(name.toUpperCase());
+      const row=document.createElement('div'); row.className='item-row';
+      if(u.urgent) row.dataset.urgent='1';
+      row.innerHTML='<input class="item-name uppercase-input" placeholder="Item name" value="'+esc(u.name)+'"><input class="item-qty" type="text" inputmode="numeric" value="'+qty+'"><input class="item-unit uppercase-input" placeholder="Unit" value="'+esc(unit)+'"><button class="remove-item" type="button">×</button>';
+      box.appendChild(row); const remove=row.querySelector('.remove-item'); remove.onclick=()=>row.remove(); added++;
+    }
   });
   if(added) { area.value=''; showToast(added+' item rows imported'); try{ box.scrollTop = box.scrollHeight; }catch(e){} } else alert('No valid items found.');
 }
@@ -3760,6 +3858,26 @@ function parsePastedText() {
     .map(s => s.replace(/^\s*(?:(?:[*•–-]+)\s+|\d{1,3}[.)]\s+)/, '').replace(/\*+\s*$/, '').trim())
     .filter(Boolean)
     .filter(s => !/^(pending items|pending|ordered|completed)\s*:?$/i.test(s));
+
+  // If first line is a customer/header (no trailing qty), put it in Customer field and do not add it as an item.
+  if(lines.length){
+    let first = lines[0];
+    let looksLikeQtyLine = /\s+(\d+)\s*(pcs|pc|pkt|items|box|set|nos|kg|x)?$/i.test(first) || /\s+[x×]\s*(\d+)$/i.test(first) || /\s+-\s*(\d+)$/.test(first);
+    let headerLike = /^(customer|cust|name|shop|order for|party)\s*[:\-]/i.test(first);
+    let oc = document.getElementById("oc");
+    let knownCust = false;
+    try {
+      let key = String(first || "").replace(/^(customer|cust|name|shop|order for|party)\s*[:\-]?\s*/i, "").replace(/\s+/g, " ").trim().toUpperCase();
+      knownCust = !!(current().customers || []).some(function(c){ return c && normCust(c.name) === key; });
+    } catch(e){}
+    // Skip top line when: explicit header, known customer, or customer box empty and line has no quantity.
+    if(headerLike || knownCust || (!looksLikeQtyLine && oc && !oc.value.trim())){
+      let custName = first.replace(/^(customer|cust|name|shop|order for|party)\s*[:\-]?\s*/i, "").trim();
+      if(oc && custName && !oc.value.trim()) oc.value = custName.toUpperCase();
+      lines = lines.slice(1);
+    }
+  }
+
   const box = document.getElementById("orderItems");
   box.innerHTML = "";
 
@@ -3784,7 +3902,9 @@ function parsePastedText() {
     }
 
     if(name) {
-      addOrderRowWithValues(name.toUpperCase(), qty, unit);
+      let u = extractUrgentFromName(name.toUpperCase());
+      // Store urgent flag temporarily on the row via data attribute; applied on save.
+      addOrderRowWithValues(u.name, qty, unit, false, u.urgent);
     }
   });
 
@@ -3796,15 +3916,22 @@ function saveOrder(){
   vibrate(40);
   const c = document.getElementById("oc").value.trim().toUpperCase(), n = document.getElementById("on").value.trim().toUpperCase();
   const rows = Array.prototype.slice.call(document.querySelectorAll("#orderItems .item-row"));
-  const items = rows.map(function(row){ 
-    return { 
+  const items = rows.map(function(row){
+    var rawName = row.querySelector(".item-name").value.trim().toUpperCase();
+    var extracted = extractUrgentFromName(rawName);
+    var item = {
       id: genId("ITM"),
-      name: row.querySelector(".item-name").value.trim().toUpperCase(), 
-      qty: Number(row.querySelector(".item-qty").value), 
+      name: extracted.name,
+      qty: Number(row.querySelector(".item-qty").value),
       unit: row.querySelector(".item-unit").value.trim().toUpperCase() || "PCS",
-      completed: false, 
-      ordered: false 
-    }; 
+      completed: false,
+      ordered: false
+    };
+    if(extracted.urgent || row.dataset.urgent === "1"){
+      item.urgent = true;
+      item.urgentBy = ((typeof getCurrentMember === "function" && getCurrentMember()) || {}).name || data.currentUser || "Member";
+    }
+    return item;
   }).filter(function(x){ return x.name; });
   
   if(!c || !items.length){ alert("Please enter Customer name and at least 1 item."); return; }
@@ -3853,9 +3980,10 @@ function addOrderRow(focusNew){
   addOrderRowWithValues("", 1, "PCS", focusNew);
 }
 
-function addOrderRowWithValues(nameVal, qtyVal, unitVal, focusNew){
+function addOrderRowWithValues(nameVal, qtyVal, unitVal, focusNew, isUrgent){
   const box = document.getElementById("orderItems"); if(!box) return;
   const row = document.createElement("div"); row.className = "item-row";
+  if(isUrgent) row.dataset.urgent = "1";
   row.innerHTML = 
     '<input class="item-name uppercase-input" value="' + esc(nameVal) + '" placeholder="Item name" autocomplete="off" enterkeyhint="next" oninput="saveOrderDraft()">' +
     '<input class="item-qty" type="text" inputmode="numeric" value="' + qtyVal + '" autocomplete="off" enterkeyhint="next" oninput="saveOrderDraft()">' +
