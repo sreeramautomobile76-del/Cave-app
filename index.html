@@ -46,7 +46,7 @@ input:focus,select:focus,textarea:focus{border-color:#1670e8}
 .business{display:flex;align-items:center;gap:14px}
 .business-icon{width:52px;height:52px;border-radius:14px;background:#e6f0ff;display:grid;place-items:center;font-size:25px}
 .dashboard-head{background:#123b72;color:white;padding:22px 20px;border-radius:0 0 24px 24px;display:flex;justify-content:space-between;align-items:center}
-.settings-btn{background:rgba(255,255,255,0.2);border:none;color:white;font-size:20px;width:40px;height:40px;border-radius:12px;display:grid;place-items:center}
+.settings-btn{background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.28);color:white;font-size:13px;font-weight:700;width:auto;height:34px;padding:0 12px;border-radius:999px;display:grid;place-items:center}
 
 /* Navigation */
 .nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:rgba(255, 255, 255, 0.9);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid #e2e8f0;display:flex;justify-content:space-around;padding:8px 10px;z-index:99;box-shadow:0 -4px 20px rgba(0,0,0,0.05)}
@@ -293,6 +293,45 @@ html[data-cave-theme="purple"]{--cave-strip:#7656d6}
 .btn:not(.secondary):not(.danger):not(.success):not(.warning),.tab-btn.active{--unused:0}
 .theme-choice[aria-pressed="true"]{box-shadow:0 0 0 2px var(--cave-accent) inset}
 
+
+
+
+/* Side menu drawer (WhatsApp-like) + full settings page */
+.cave-drawer-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;opacity:0;transition:opacity .22s ease;display:block}
+.cave-drawer-overlay.show{opacity:1}
+.cave-drawer{position:fixed;top:0;left:0;bottom:0;width:min(86vw,320px);max-width:320px;background:#fff;z-index:1001;transform:translateX(-103%);transition:transform .26s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column;box-shadow:8px 0 28px rgba(0,0,0,.18)}
+.cave-drawer.show{transform:translateX(0)}
+.cave-drawer-head{padding:18px 16px 14px;background:linear-gradient(135deg,var(--cave-ink),var(--cave-accent));color:#fff;flex-shrink:0}
+.cave-drawer-head .dh-kicker{font-size:11px;font-weight:800;letter-spacing:1px;opacity:.8;text-transform:uppercase}
+.cave-drawer-head .dh-name{font-size:18px;font-weight:800;margin-top:4px;line-height:1.25}
+.cave-drawer-head .dh-sub{font-size:12px;opacity:.88;margin-top:3px}
+.cave-drawer-scroll{overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;padding:8px 0 20px;background:#fff}
+.wa-row{display:flex;align-items:center;gap:14px;padding:12px 16px;width:100%;text-align:left;border:0;background:transparent;cursor:pointer;border-bottom:1px solid #f0f2f5}
+.wa-row:last-child{border-bottom:0}
+.wa-row:active{background:#f5f6f6}
+.wa-ico{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;font-size:18px;flex-shrink:0;color:#fff;font-weight:800}
+.wa-body{flex:1;min-width:0}
+.wa-title{font-size:15.5px;font-weight:650;color:#111b21;line-height:1.25}
+.wa-sub{font-size:12.5px;color:#667781;margin-top:2px;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wa-chev{color:#c5c9cd;font-size:18px;flex-shrink:0;font-weight:700}
+.wa-toggle{position:relative;width:46px;height:28px;border-radius:999px;border:0;background:#c5c9cd;flex-shrink:0;padding:0}
+.wa-toggle.on{background:#25d366}
+.wa-toggle span{position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .18s}
+.wa-toggle.on span{transform:translateX(18px)}
+.wa-group{background:#fff;margin:0 0 10px;border-top:1px solid #e9edef;border-bottom:1px solid #e9edef}
+.wa-group-label{padding:12px 16px 6px;font-size:12px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:#667781}
+.settings-page .settings-block{background:#fff;border:1px solid #e2e8f0;border-radius:16px;margin:0 0 12px;overflow:hidden}
+.settings-page .settings-block .wa-row{border-bottom:1px solid #f0f2f5}
+.settings-page .settings-block .wa-row:last-child{border-bottom:0}
+html.dark .cave-drawer,html.dark .cave-drawer-scroll{background:#1f2c34}
+html.dark .wa-title{color:#e9edef}
+html.dark .wa-sub,html.dark .wa-group-label{color:#8696a0}
+html.dark .wa-row{border-bottom-color:#2a3942}
+html.dark .wa-row:active{background:#2a3942}
+html.dark .wa-chev{color:#8696a0}
+html.dark .wa-group{background:#1f2c34;border-color:#2a3942}
+html.dark .wa-toggle{background:#3b4a54}
+html.dark .settings-page .settings-block{background:#1a2336;border-color:#2c3850}
 .theme-setting{padding:12px;border:1px solid #e2e8f0;border-radius:14px;margin:0 0 12px}.theme-options{display:flex;gap:7px;margin-top:10px}.theme-choice{flex:1;padding:9px 4px;border-radius:10px;border:1px solid #dbe3ef;background:#fff;font-size:12px;font-weight:800}.theme-choice.blue{color:#2878ed}.theme-choice.green{color:#15966b}.theme-choice.purple{color:#7656d6}html.dark .theme-setting{border-color:#2c3850}html.dark .theme-choice{background:#202b42;border-color:#35435d}
 .dashboard-head{background:linear-gradient(135deg,var(--cave-ink),var(--cave-accent))!important;padding:27px 20px 25px;border-radius:0 0 28px 28px;box-shadow:0 10px 24px color-mix(in srgb,var(--cave-accent) 24%,transparent)}
 .dashboard-title{display:flex;align-items:center;justify-content:space-between;margin:18px 2px 12px}.dashboard-title h2{font-size:21px;margin:0;letter-spacing:-.4px}.dashboard-kicker{font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;opacity:.75;margin-bottom:5px}
@@ -780,8 +819,23 @@ function genId(prefix="ID") {
   return prefix + "_" + Date.now().toString(36) + "_" + Math.random().toString(36).substr(2, 5);
 }
 
+function cavePref(key, def){
+  try {
+    var v = localStorage.getItem(key);
+    if(v === null || v === undefined) return def;
+    return v;
+  } catch(e){ return def; }
+}
+function cavePrefOn(key, defOn){
+  var v = cavePref(key, defOn ? "1" : "0");
+  return v === "1" || v === "true";
+}
+function setCavePref(key, on){
+  try { localStorage.setItem(key, on ? "1" : "0"); } catch(e){}
+}
 function vibrate(ms = 30) {
   try {
+    if(!cavePrefOn("CAVE_VIBRATE", true)) return;
     if (navigator && typeof navigator.vibrate === "function") {
       navigator.vibrate(ms);
     }
@@ -790,6 +844,7 @@ function vibrate(ms = 30) {
 
 function playNotificationSound() {
   try {
+    if(!cavePrefOn("CAVE_SOUND", true)) return;
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
@@ -1136,44 +1191,242 @@ function forceResync(){
   try { var b = current(); if(b) localStorage.setItem(_dk(b.id), "1"); } catch(e){}
   syncNow();
   showToast("Sync started");
-  document.querySelectorAll(".modal-overlay").forEach(function(m){ m.remove(); });
+  try { if(currentScreen === "settings") pageSettings(); } catch(e){}
+}
+function waIco(bg, emoji){
+  return '<div class="wa-ico" style="background:' + bg + '">' + emoji + '</div>';
+}
+function waRow(onclick, ico, title, sub, extraRight){
+  return '<button type="button" class="wa-row" onclick="' + onclick + '">' + ico +
+    '<div class="wa-body"><div class="wa-title">' + title + '</div>' + (sub ? '<div class="wa-sub">' + sub + '</div>' : '') + '</div>' +
+    (extraRight || '<div class="wa-chev">›</div>') + '</button>';
+}
+function waToggle(id, on){
+  return '<button type="button" class="wa-toggle' + (on ? ' on' : '') + '" id="' + id + '" onclick="event.stopPropagation()"><span></span></button>';
+}
+function shareBusinessId(){
+  var b = current(); if(!b) return;
+  var txt = "Join our CAVE business\nName: " + (b.name || "") + "\nBusiness ID: " + b.id + "\n\nOpen CAVE app → Join with this ID.";
+  try { navigator.clipboard.writeText(txt); } catch(e){}
+  try { window.location.href = "whatsapp://send?text=" + encodeURIComponent(txt); } catch(e){}
+  showToast("Business ID ready to share");
+}
+function exportCaveBackup(){
+  try {
+    var b = current();
+    if(!b){ showToast("No business open"); return; }
+    var payload = { app: "CAVE", version: 12, exportedAt: new Date().toISOString(), business: b };
+    var blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    var a = document.createElement("a");
+    var name = String(b.name || "CAVE").replace(/[^\w\-]+/g, "_").slice(0, 40);
+    a.href = URL.createObjectURL(blob);
+    a.download = "CAVE_backup_" + name + "_" + getTodayIsoString() + ".json";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function(){ try { URL.revokeObjectURL(a.href); a.remove(); } catch(e){} }, 800);
+    showToast("Backup downloaded");
+  } catch(e){ showToast("Backup failed"); }
+}
+function importCaveBackupPrompt(){
+  var input = document.createElement("input");
+  input.type = "file";
+  input.accept = "application/json,.json";
+  input.style.display = "none";
+  document.body.appendChild(input);
+  input.onchange = function(){
+    var file = input.files && input.files[0];
+    input.remove();
+    if(!file) return;
+    var reader = new FileReader();
+    reader.onload = function(){
+      try {
+        var parsed = JSON.parse(String(reader.result || ""));
+        var biz = parsed && (parsed.business || parsed);
+        if(!biz || !biz.id || !biz.name){ alert("This file does not look like a CAVE backup."); return; }
+        confirmAction("Restore backup?", "This will replace local data for \"" + (biz.name || biz.id) + "\" on this phone. Cloud data may merge on next sync.", function(){
+          normB(biz); ensureIds(biz);
+          var i = (data.businesses || []).findIndex(function(x){ return x && x.id === biz.id; });
+          if(i === -1) data.businesses.push(biz); else data.businesses[i] = mergeBusiness(data.businesses[i], biz);
+          data.currentBusiness = biz.id; updateDraftKey(); save(); seedSnap(current());
+          document.querySelectorAll(".modal-overlay").forEach(function(m){ m.remove(); });
+          showToast("Backup restored"); dashboard();
+        });
+      } catch(e){ alert("Could not read this backup file."); }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+function clearLocalDrafts(){
+  confirmAction("Clear order drafts?", "Unsaved order drafts on this phone will be removed. Saved orders are safe.", function(){
+    try {
+      var keys = [];
+      for(var i = 0; i < localStorage.length; i++){
+        var k = localStorage.key(i);
+        if(k && k.indexOf("CAVE_ORDER_DRAFT_") === 0) keys.push(k);
+      }
+      keys.forEach(function(k){ localStorage.removeItem(k); });
+      showToast(keys.length ? (keys.length + " draft(s) cleared") : "No drafts found");
+    } catch(e){ showToast("Could not clear drafts"); }
+  });
+}
+function closeSideMenu(){
+  var ov = document.getElementById("caveDrawerOverlay");
+  var dr = document.getElementById("caveDrawer");
+  if(dr) dr.classList.remove("show");
+  if(ov){
+    ov.classList.remove("show");
+    setTimeout(function(){ try { ov.remove(); } catch(e){} try { if(dr) dr.remove(); } catch(e){} }, 240);
+  } else {
+    try { if(dr) dr.remove(); } catch(e){}
+  }
 }
 function openSettings(){
   vibrate(20);
-  let b = current();
-  let me = getCurrentMember();
-  let modal = document.createElement("div");
-  modal.className = "modal-overlay";
-  modal.innerHTML =
-    '<div class="modal" style="max-height:85vh;overflow-y:auto">' +
-      '<h2 style="margin-bottom:12px">🏢 Profile & Settings</h2>' +
-      '<div style="background:#f0f5ff;padding:12px;border-radius:12px;margin-bottom:14px">' +
-        '<div style="font-size:18px;font-weight:bold;color:#123b72">' + esc(b.name) + '</div>' +
-        '<div style="font-size:13px;color:#71809a;margin-top:2px">ID: <b>' + esc(b.id) + '</b></div>' +
-      '</div>' +
-      '<div style="font-size:14px;line-height:1.8;margin-bottom:16px">' +
-        '<div>👤 <b>Active User:</b> ' + esc(me ? me.name : "Unknown") + ' (' + esc(me ? me.role : "Member") + ')</div>' +
-        '<div>👑 <b>Owner:</b> ' + esc(b.owner || "Not Specified") + '</div>' +
-        '<div>📞 <b>Mobile:</b> ' + esc(b.mobile || "Not Specified") + '</div>' +
-      '</div>' +
-      '<div style="font-size:12px;line-height:1.6;margin-bottom:12px;padding:10px;border-radius:12px;background:#f7fafc;border:1px solid #e2e8f0"><b>Sync status</b><br>' +
-        'Server: ' + (SYNC_STATE.connected === null ? 'checking...' : (SYNC_STATE.connected ? '\uD83D\uDFE2 connected' : '\uD83D\uDD34 not connected')) + '<br>' +
-        'Last upload: ' + (SYNC_STATE.lastOk ? new Date(SYNC_STATE.lastOk).toLocaleTimeString() : '-') + ' \u00B7 Last download: ' + (SYNC_STATE.lastRead ? new Date(SYNC_STATE.lastRead).toLocaleTimeString() : '-') + '<br>' +
-        (SYNC_STATE.lastErr ? '<span style="color:#c53030">Error: ' + esc(SYNC_STATE.lastErr) + '</span>' : '<span class="muted">No errors</span>') +
-        '<button class="btn secondary" style="margin:8px 0 0;padding:7px 12px;width:auto;font-size:12px" onclick="forceResync()">\uD83D\uDD04 Sync now</button></div>' +
-      '<div class="theme-setting"><b>🎨 App colour theme</b><div class="theme-options">' +
-        '<button type="button" class="theme-choice blue" data-theme="blue" onclick="setCaveTheme(this.dataset.theme)">🔵 Blue</button>' +
-        '<button type="button" class="theme-choice green" data-theme="green" onclick="setCaveTheme(this.dataset.theme)">🟢 Green</button>' +
-        '<button type="button" class="theme-choice purple" data-theme="purple" onclick="setCaveTheme(this.dataset.theme)">🟣 Purple</button>' +
-      '</div><div class="small muted" style="margin-top:6px">Works with light and dark mode.</div></div>' +
-      '<button class="btn secondary" style="margin-top:0" onclick="copyBusinessID(\'' + esc(b.id) + '\')">📋 Copy Business ID</button>' +
-      '<button class="btn secondary" style="margin-top:8px" onclick="switchActiveUserModal()">👤 Switch Current User</button>' +
-      '<button class="btn secondary" style="margin-top:8px" onclick="enableNotifications()">🔔 Enable Phone Notifications</button>' +
-      (canPackOrder() ? '<button class="btn secondary" style="margin-top:8px" onclick="editBusinessProfile()">✏ Edit Business Details</button>' : '') +
-      '<button class="btn danger" style="margin-top:8px" onclick="confirmExitBusiness()">🚪 Switch / Exit Business</button>' +
-      '<button class="btn" style="margin-top:12px;background:#71809a" onclick="this.closest(\'.modal-overlay\').remove()">Close</button>' +
+  closeSideMenu();
+  var b = current();
+  if(!b) return;
+  var me = getCurrentMember();
+  var pending = 0, ordersToday = 0;
+  try {
+    var todayIso = getTodayIsoString();
+    (b.orders || []).forEach(function(o){
+      if(!o || o.deleted) return;
+      var iso = o.isoDate || orderLocalIso(o);
+      if(iso === todayIso){
+        ordersToday++;
+        (o.items || []).forEach(function(it){ if(it && !it.completed && !it.noStock) pending++; });
+      }
+    });
+  } catch(e){}
+  var existing = document.getElementById("caveDrawerOverlay");
+  if(existing) existing.remove();
+  var oldDr = document.getElementById("caveDrawer");
+  if(oldDr) oldDr.remove();
+
+  var overlay = document.createElement("div");
+  overlay.id = "caveDrawerOverlay";
+  overlay.className = "cave-drawer-overlay";
+  overlay.onclick = closeSideMenu;
+
+  var drawer = document.createElement("div");
+  drawer.id = "caveDrawer";
+  drawer.className = "cave-drawer";
+  drawer.onclick = function(e){ e.stopPropagation(); };
+  drawer.innerHTML =
+    '<div class="cave-drawer-head">' +
+      '<div class="dh-kicker">CAVE</div>' +
+      '<div class="dh-name">' + esc(b.name || "Business") + '</div>' +
+      '<div class="dh-sub">' + esc(me ? me.name : "User") + (me && me.role ? " · " + esc(me.role) : "") + '</div>' +
+    '</div>' +
+    '<div class="cave-drawer-scroll">' +
+      waRow("closeSideMenu(); newOrder();", waIco("#25d366","＋"), "New order", "Create order for a customer") +
+      waRow("closeSideMenu(); pageOrders(document.getElementById('nav-orders'));", waIco("#53bdeb","📋"), "Orders", ordersToday + " today · " + pending + " pending items") +
+      waRow("closeSideMenu(); pageReceived();", waIco("#02a698","📥"), "Goods received", "Boxes, party and bill entries") +
+      waRow("closeSideMenu(); pageTeam(document.getElementById('nav-team'));", waIco("#7f66ff","👥"), "Team", ((b.team || []).length) + " members") +
+      waRow("closeSideMenu(); pageCustomers(document.getElementById('nav-customers'));", waIco("#ff8a00","👤"), "Customers", ((b.customers || []).length) + " saved") +
+      (canPackOrder() ? waRow("closeSideMenu(); pageActivity();", waIco("#e35d6a","📊"), "Activity & reports", "Team work and daily summary") : "") +
+      '<div style="height:8px;background:#f0f2f5"></div>' +
+      waRow("closeSideMenu(); pageSettings();", waIco("#54656f","⚙"), "Settings", "Profile, theme, backup, alerts") +
     '</div>';
-  document.body.appendChild(modal);
+
+  document.body.appendChild(overlay);
+  document.body.appendChild(drawer);
+  requestAnimationFrame(function(){
+    requestAnimationFrame(function(){
+      overlay.classList.add("show");
+      drawer.classList.add("show");
+    });
+  });
+}
+function pageSettings(){
+  orderEntryActive = false;
+  document.body.classList.remove("order-entry-active");
+  currentScreen = "settings";
+  closeSideMenu();
+  try {
+    document.querySelectorAll(".nav button").forEach(function(x){ x.classList.remove("active"); });
+  } catch(e){}
+  var b = current();
+  var me = getCurrentMember();
+  if(!b){ app(); return; }
+  document.getElementById("header-area").innerHTML = "";
+  var darkOn = isDarkMode();
+  var soundOn = cavePrefOn("CAVE_SOUND", true);
+  var vibOn = cavePrefOn("CAVE_VIBRATE", true);
+  var syncLabel = SYNC_STATE.connected === null ? "Checking…" : (SYNC_STATE.connected ? "Connected" : "Offline");
+  var lastUp = SYNC_STATE.lastOk ? new Date(SYNC_STATE.lastOk).toLocaleTimeString() : "—";
+  var lastDown = SYNC_STATE.lastRead ? new Date(SYNC_STATE.lastRead).toLocaleTimeString() : "—";
+  var notifState = ("Notification" in window) ? Notification.permission : "unsupported";
+  var notifSub = notifState === "granted" ? "Enabled" : (notifState === "denied" ? "Blocked in browser" : "Not enabled");
+
+  document.getElementById("page").innerHTML =
+    '<div class="settings-page">' +
+      '<button class="back-btn" type="button" onclick="pageHome(document.getElementById(\'nav-home\'))">← Back</button>' +
+      '<h2 style="margin:4px 0 14px">Settings</h2>' +
+
+      '<div class="settings-block">' +
+        '<div class="wa-group-label">Account</div>' +
+        waRow("switchActiveUserModal();", waIco("#53bdeb","👤"), "Active user", esc(me ? (me.name + " · " + (me.role || "Member")) : "Not set")) +
+        (canPackOrder() ? waRow("editBusinessProfile();", waIco("#7f66ff","🏢"), "Business profile", esc((b.owner || "Owner not set") + (b.mobile ? " · " + b.mobile : ""))) : "") +
+        waRow("shareBusinessId();", waIco("#25d366","↗"), "Invite team", "Share business ID on WhatsApp") +
+        waRow("copyBusinessID('" + esc(b.id) + "');", waIco("#02a698","ID"), "Copy business ID", esc(b.id)) +
+      '</div>' +
+
+      '<div class="settings-block">' +
+        '<div class="wa-group-label">Alerts & display</div>' +
+        '<div class="wa-row" style="cursor:default">' + waIco("#111b21","🌙") + '<div class="wa-body"><div class="wa-title">Dark mode</div><div class="wa-sub">Dim the interface</div></div>' + waToggle("stDark", darkOn) + '</div>' +
+        '<div class="wa-row" style="cursor:default">' + waIco("#667781","🔔") + '<div class="wa-body"><div class="wa-title">Sounds</div><div class="wa-sub">In-app alert tone</div></div>' + waToggle("stSound", soundOn) + '</div>' +
+        '<div class="wa-row" style="cursor:default">' + waIco("#ff8a00","📳") + '<div class="wa-body"><div class="wa-title">Vibration</div><div class="wa-sub">Haptics on actions</div></div>' + waToggle("stVibrate", vibOn) + '</div>' +
+        waRow("enableNotifications();", waIco("#e35d6a","📢"), "Phone notifications", notifSub) +
+        '<div style="padding:12px 16px 14px"><div class="wa-title" style="font-size:14px;margin-bottom:8px">Colour theme</div><div class="theme-options">' +
+          '<button type="button" class="theme-choice blue" data-theme="blue" onclick="setCaveTheme(this.dataset.theme)">Blue</button>' +
+          '<button type="button" class="theme-choice green" data-theme="green" onclick="setCaveTheme(this.dataset.theme)">Green</button>' +
+          '<button type="button" class="theme-choice purple" data-theme="purple" onclick="setCaveTheme(this.dataset.theme)">Purple</button>' +
+        '</div></div>' +
+      '</div>' +
+
+      '<div class="settings-block">' +
+        '<div class="wa-group-label">Data & sync</div>' +
+        waRow("forceResync();", waIco("#53bdeb","↻"), "Sync now", esc(syncLabel) + " · up " + esc(lastUp) + " · down " + esc(lastDown)) +
+        waRow("exportCaveBackup();", waIco("#02a698","⬇"), "Export backup", "Download JSON of this business") +
+        waRow("importCaveBackupPrompt();", waIco("#7f66ff","⬆"), "Restore backup", "Import a CAVE backup file") +
+        waRow("clearLocalDrafts();", waIco("#8696a0","🗑"), "Clear drafts", "Remove unsaved order drafts") +
+      '</div>' +
+
+      '<div class="settings-block">' +
+        '<div class="wa-group-label">Session</div>' +
+        waRow("confirmExitBusiness();", waIco("#ea0038","⎋"), "Exit business", "Switch business on this phone") +
+      '</div>' +
+      '<div style="height:24px"></div>' +
+    '</div>';
+
+  try {
+    var th = document.documentElement.getAttribute("data-cave-theme") || "blue";
+    document.querySelectorAll(".settings-page .theme-choice").forEach(function(btn){
+      btn.setAttribute("aria-pressed", btn.dataset.theme === th ? "true" : "false");
+    });
+  } catch(e){}
+  var darkBtn = document.getElementById("stDark");
+  if(darkBtn) darkBtn.onclick = function(e){ e.stopPropagation(); toggleDarkMode(); pageSettings(); };
+  var soundBtn = document.getElementById("stSound");
+  if(soundBtn) soundBtn.onclick = function(e){
+    e.stopPropagation();
+    var on = !cavePrefOn("CAVE_SOUND", true);
+    setCavePref("CAVE_SOUND", on);
+    soundBtn.classList.toggle("on", on);
+    if(on) playNotificationSound();
+    showToast(on ? "Sounds ON" : "Sounds OFF");
+  };
+  var vibBtn = document.getElementById("stVibrate");
+  if(vibBtn) vibBtn.onclick = function(e){
+    e.stopPropagation();
+    var on = !cavePrefOn("CAVE_VIBRATE", true);
+    setCavePref("CAVE_VIBRATE", on);
+    vibBtn.classList.toggle("on", on);
+    if(on){ try { if(navigator.vibrate) navigator.vibrate(40); } catch(err){} }
+    showToast(on ? "Vibration ON" : "Vibration OFF");
+  };
 }
 
 function switchActiveUserModal(){
@@ -1288,6 +1541,12 @@ function handleCaveSystemBack(){
       pageOrders(document.getElementById('nav-orders'));
       return;
     }
+    var drawer = document.getElementById('caveDrawer');
+    if(drawer){ closeSideMenu(); return; }
+    if(currentScreen === 'settings'){
+      pageHome(document.getElementById('nav-home'));
+      return;
+    }
     if(currentScreen !== 'home'){
       pageHome(document.getElementById('nav-home'));
       return;
@@ -1375,7 +1634,7 @@ function pageHome(btn){
   setLastView("home");
   let b = current();
   document.getElementById("header-area").innerHTML =
-    '<div class="dashboard-head"><div><div class="logo" style="font-size:24px">CAVE</div><h2 style="margin:4px 0 0;font-size:20px">' + esc(b.name) + '</h2></div><button class="settings-btn" onclick="openSettings()">⚙️️</button></div>';
+    '<div class="dashboard-head"><div><div class="logo" style="font-size:24px">CAVE</div><h2 style="margin:4px 0 0;font-size:20px">' + esc(b.name) + '</h2></div><button class="settings-btn" onclick="openSettings()">Menu</button></div>';
     
   let todayIso = getTodayIsoString();
   let todayLabel = new Date().toLocaleDateString([], { day: '2-digit', month: 'short', year: 'numeric' });
@@ -2616,7 +2875,10 @@ function toggleDarkMode(){
   try { var sf = document.getElementById("caveStockFrame"); if(sf && sf.contentDocument) sf.contentDocument.documentElement.classList.toggle("dark", on); } catch(e){}
   try { localStorage.setItem("CAVE_DARK", on ? "1" : "0"); } catch(e){}
   showToast(on ? "Dark mode ON" : "Dark mode OFF");
-  try { pageHome(document.getElementById("nav-home")); } catch(e){}
+  try {
+    if(currentScreen === "settings") pageSettings();
+    else if(currentScreen === "home") pageHome(document.getElementById("nav-home"));
+  } catch(e){}
 }
 
 /* ===== Share order as Image / PDF (drawn on a canvas, no external library) ===== */
