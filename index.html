@@ -1797,14 +1797,28 @@ function it_u(o){ return (o.items || []).filter(function(x){ return x && x.urgen
 function normSearch(s){
   return String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, "");
 }
+function searchTokens(s){
+  return String(s || "").toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+}
 function textMatchesQuery(text, q){
   if(!q) return true;
   var t = String(text || "").toLowerCase();
   var qq = String(q || "").toLowerCase().trim();
   if(!qq) return true;
+  // Exact substring (original spacing)
   if(t.indexOf(qq) !== -1) return true;
+  // Collapsed alphanumeric substring (ignores all spaces/punctuation)
   var nt = normSearch(t), nq = normSearch(qq);
-  return !!(nq && nt.indexOf(nq) !== -1);
+  if(nq && nt.indexOf(nq) !== -1) return true;
+  // Token match: every query token must appear as a substring of some text token
+  // (order-independent, supports partial tokens like "S HH BUL" -> "SM BULB HH")
+  var qTokens = searchTokens(qq);
+  if(!qTokens.length) return true;
+  var tTokens = searchTokens(t);
+  if(!tTokens.length) return false;
+  return qTokens.every(function(qt){
+    return tTokens.some(function(tt){ return tt.indexOf(qt) !== -1; }) || nt.indexOf(qt) !== -1;
+  });
 }
 function extractUrgentFromName(name){
   var n = String(name || "").trim();
