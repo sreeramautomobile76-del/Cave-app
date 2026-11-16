@@ -921,6 +921,9 @@ function listenToFirebase(){
         seedSnap(cloudData);
       }
       localStorage.setItem(KEY, JSON.stringify(data));
+
+      // If this user was removed from the team on another device, log them out here.
+      if(typeof forceLogoutIfRemoved === "function" && forceLogoutIfRemoved()) return;
       
       // IMPORTANT: never re-render the UI while the user is entering an order.
       // Firebase can receive updates from another device at any moment; rebuilding
@@ -1164,6 +1167,7 @@ function dashboard(){
   currentScreen = "home";
   let b = current();
   if(!b){ app(); return; }
+  if(typeof forceLogoutIfRemoved === "function" && forceLogoutIfRemoved()) return;
   listenToFirebase();
   document.getElementById("app").innerHTML =
     '<div class="main-content">' +
@@ -2316,7 +2320,9 @@ function showOrderOptionsModal(orderId){
       ((o.customer && o.customer !== "undefined") ? '<button class="btn secondary" style="margin-top:8px" id="optHistBtn">🕘 Customer History</button>' : '') +
       (canDelete ? '<button class="btn secondary" style="margin-top:8px;color:#d32f2f;border-color:#d32f2f" id="optBillBtn">' + (o.billed ? '↩ Remove Billed Mark' : '🧾 Mark as Billed') + '</button>' : '') +
       (canDelete ? '<button class="btn secondary" style="margin-top:8px;color:#1f8a3b;border-color:#1f8a3b" id="optPackBtn">' + (o.packed ? '↩ Remove Packed Mark' : '📦 Mark as Packed') + '</button>' : '') +
-      '<button class="btn warning" style="margin-top:8px" id="optCloseBtn">🔒 Force Close Order</button>' +
+      (o.closedManually
+        ? '<button class="btn secondary" style="margin-top:8px;color:#1670e8;border-color:#1670e8" id="optUnlockBtn">🔓 Unlock / Reopen Order</button>'
+        : '<button class="btn warning" style="margin-top:8px" id="optCloseBtn">🔒 Force Close Order</button>') +
       (canDelete ? '<button class="btn danger" style="margin-top:8px" id="optDelBtn">🗑 Delete Order</button>' : '') +
       '<button class="btn" style="margin-top:12px;background:#71809a" onclick="this.closest(\'.modal-overlay\').remove()">Cancel</button>' +
     '</div>';
@@ -2325,7 +2331,12 @@ function showOrderOptionsModal(orderId){
   document.getElementById("optOpenBtn").onclick = () => { modal.remove(); openOrderDetail(orderId); };
   document.getElementById("optEditBtn").onclick = () => { modal.remove(); editOrderModal(orderId); };
   document.getElementById("optAddItemsBtn").onclick = () => { modal.remove(); addItemsToExistingOrderModal(orderId); };
-  document.getElementById("optCloseBtn").onclick = () => { modal.remove(); forceCloseOrder(orderId); };
+  if(document.getElementById("optCloseBtn")){
+    document.getElementById("optCloseBtn").onclick = () => { modal.remove(); forceCloseOrder(orderId); };
+  }
+  if(document.getElementById("optUnlockBtn")){
+    document.getElementById("optUnlockBtn").onclick = () => { modal.remove(); unlockOrder(orderId); };
+  }
   if(document.getElementById("optHistBtn")){
     document.getElementById("optHistBtn").onclick = () => { modal.remove(); openCustomerHistory(o.customer); };
   }
@@ -2644,7 +2655,9 @@ function openOrderDetail(orderId){
     '<div class="badge badge-adopted" style="font-size:13px;padding:8px 12px;margin-top:8px">✋ Adopted by: ' + esc(o.adoptedBy) + '</div>' :
     '<button class="btn warning" style="margin-top:10px;padding:10px" onclick="adoptOrder(\'' + esc(o.id) + '\')">✋ Adopt Order (Take Responsibility)</button>';
 
-  let closeOrderBtnHtml = (!o.closedManually) ? '<button class="btn danger" style="margin-top:8px;padding:10px" onclick="forceCloseOrder(\'' + esc(o.id) + '\')">🔒 Force Close Order</button>' : '';
+  let closeOrderBtnHtml = o.closedManually
+    ? '<button class="btn secondary" style="margin-top:8px;padding:10px;color:#1670e8;border-color:#1670e8" onclick="unlockOrder(\'' + esc(o.id) + '\')">🔓 Unlock / Reopen Order</button>'
+    : '<button class="btn danger" style="margin-top:8px;padding:10px" onclick="forceCloseOrder(\'' + esc(o.id) + '\')">🔒 Force Close Order</button>';
 
   let customerDisplay = (o.customer && o.customer !== "undefined") ? esc(o.customer) : "UNKNOWN CUSTOMER";
 
@@ -2748,6 +2761,7 @@ function actText(e){
     case "packed": return '\uD83D\uDCE6 ' + w + ' marked order PACKED' + c;
     case "unpacked": return '\u21A9 ' + w + ' removed PACKED mark' + c;
     case "closed": return '\uD83D\uDD12 ' + w + ' closed order' + c;
+    case "reopened": return '\uD83D\uDD13 ' + w + ' unlocked / reopened order' + c;
     case "deleted": return '\uD83D\uDDD1 ' + w + ' deleted order' + c;
     case "received": return '\uD83D\uDCE5 ' + w + ' recorded goods from ' + (e.c ? esc(e.c) : 'a party') + ' (' + esc(e.i || '') + ')';
     case "order_new": return '\uD83C\uDD95 ' + w + ' created order' + c + (e.i ? ' \u00B7 ' + esc(e.i) + ' items' : '');
@@ -3298,6 +3312,43 @@ function canPackOrder(){
   return !!(me && (me.isAdmin || me.isCreator || me.role === "Owner" || me.role === "Administrator" || me.role === "Admin"));
 }
 
+function isOwnerMember(m){
+  return !!(m && (m.isCreator || m.role === "Owner"));
+}
+function isAdminMember(m){
+  return !!(m && (m.isAdmin || m.role === "Administrator" || m.role === "Admin" || isOwnerMember(m)));
+}
+function canRemoveMember(target){
+  if(!target || isOwnerMember(target)) return false;
+  var me = getCurrentMember();
+  if(!me) return false;
+  if(isOwnerMember(me)) return true;
+  if(isAdminMember(me) && !isAdminMember(target)) return true;
+  return false;
+}
+function isStillTeamMember(){
+  var b = current();
+  if(!b || !data.currentUser) return false;
+  var removed = b.removedIds || [];
+  var m = (b.team || []).find(function(x){ return x && String(x.name || "").toUpperCase() === String(data.currentUser || "").toUpperCase(); });
+  if(!m) return false;
+  if(m.id && removed.indexOf(m.id) !== -1) return false;
+  return true;
+}
+function forceLogoutIfRemoved(){
+  if(!data.currentBusiness) return false;
+  if(isStillTeamMember()) return false;
+  var bizName = (current() && current().name) || "this business";
+  data.currentBusiness = null;
+  data.currentUser = "";
+  updateDraftKey();
+  try { localStorage.setItem(KEY, JSON.stringify(data)); } catch(e){}
+  if(activeFirebaseRef){ try{ activeFirebaseRef.off(); }catch(e){} activeFirebaseRef = null; }
+  showToast("You were removed from " + bizName + ". Logged out.");
+  app();
+  return true;
+}
+
 function packedStampHtml(o, size){
   if(!o || (!o.packed && !o.billed)) return "";
   var both = !!(o.packed && o.billed);
@@ -3583,6 +3634,20 @@ function forceCloseOrder(orderId){
     save();
     pushTeamNotification("Order for " + ((o.customer && o.customer !== "undefined") ? o.customer : "Order") + " was closed manually.");
     openOrderDetail(orderId);
+  });
+}
+
+function unlockOrder(orderId){
+  confirmAction("Unlock / Reopen Order?", "This order will be opened again. Pending items can be worked on as usual.", function(){
+    let b = current();
+    let o = b.orders.find(x => x && x.id === orderId);
+    if(!o) return;
+    o.closedManually = false;
+    logAct("reopened", o);
+    save();
+    pushTeamNotification("Order for " + ((o.customer && o.customer !== "undefined") ? o.customer : "Order") + " was unlocked / reopened.");
+    openOrderDetail(orderId);
+    showToast("Order unlocked");
   });
 }
 
@@ -4346,14 +4411,33 @@ function showTeamMemberOptionsModal(memberId){
   let member = b.team.find(x => x && x.id === memberId);
   if(!member) return;
 
+  if(!canPackOrder()){
+    showToast("Only the Owner or an Admin can manage team members");
+    return;
+  }
+
+  let canPromote = canPackOrder() && !isAdminMember(member) && !isOwnerMember(member);
+  let canRemove = canRemoveMember(member);
+  let ownerLocked = isOwnerMember(member);
+
+  let actionsHtml = "";
+  if(ownerLocked){
+    actionsHtml = '<p class="muted small" style="margin:0 0 12px">👑 Owner cannot be removed by anyone.</p>';
+  } else {
+    if(canPromote) actionsHtml += '<button class="btn secondary" style="margin-top:0" id="makeAdminBtn">⭐ Make Admin</button>';
+    if(canRemove) actionsHtml += '<button class="btn danger" style="margin-top:8px" id="removeTeamBtn">🗑 Remove Team Member</button>';
+    if(!canPromote && !canRemove){
+      actionsHtml = '<p class="muted small" style="margin:0 0 12px">You do not have permission to change this member.</p>';
+    }
+  }
+
   let modal = document.createElement("div");
   modal.className = "modal-overlay";
   modal.innerHTML =
     '<div class="modal">' +
       '<h3 style="margin-bottom:4px">' + esc(member.name || "") + '</h3>' +
       '<p class="muted small" style="margin-bottom:14px">Member Actions:</p>' +
-      (!member.isAdmin ? '<button class="btn secondary" style="margin-top:0" id="makeAdminBtn">⭐ Make Admin</button>' : '') +
-      '<button class="btn danger" style="margin-top:8px" id="removeTeamBtn">🗑 Remove Team Member</button>' +
+      actionsHtml +
       '<button class="btn" style="margin-top:12px;background:#71809a" onclick="this.closest(\'.modal-overlay\').remove()">Cancel</button>' +
     '</div>';
   document.body.appendChild(modal);
@@ -4361,10 +4445,15 @@ function showTeamMemberOptionsModal(memberId){
   if(document.getElementById("makeAdminBtn")){
     document.getElementById("makeAdminBtn").onclick = () => { modal.remove(); makeAdmin(memberId); };
   }
-  document.getElementById("removeTeamBtn").onclick = () => { modal.remove(); removeTeam(memberId); };
+  if(document.getElementById("removeTeamBtn")){
+    document.getElementById("removeTeamBtn").onclick = () => { modal.remove(); removeTeam(memberId); };
+  }
 }
 
 function makeAdmin(memberId){
+  if(!canPackOrder()){ showToast("Only the Owner or an Admin can promote members"); return; }
+  let target = current().team.find(x => x && x.id === memberId);
+  if(!target || isOwnerMember(target) || isAdminMember(target)){ showToast("Cannot promote this member"); return; }
   confirmAction("Promote to Admin?", "Are you sure you want to promote this member to Admin?", function(){
     let b = current();
     let member = b.team.find(x => x && x.id === memberId);
@@ -4413,12 +4502,23 @@ function addTeamModal(){
 function removeTeam(memberId){
   let member = current().team.find(x => x && x.id === memberId);
   if(!member) return;
-  confirmAction("Remove Team Member?", "Are you sure you want to remove " + (member.name || "") + " from the team?", function(){
+  if(!canRemoveMember(member)){
+    if(isOwnerMember(member)) showToast("Owner cannot be removed by anyone");
+    else showToast("Only the Owner or an Admin can remove this member");
+    return;
+  }
+  confirmAction("Remove Team Member?", "Remove " + (member.name || "") + " from the team? Their phone will be logged out of this business automatically.", function(){
     let idx = current().team.findIndex(x => x && x.id === memberId);
     if(idx !== -1) {
       (current().removedIds = current().removedIds || []).push(memberId);
       current().team.splice(idx, 1);
+      let removedName = member.name || "Member";
+      pushTeamNotification(removedName + " was removed from the team.");
       save();
+      if(String(data.currentUser || "").toUpperCase() === String(removedName).toUpperCase()){
+        forceLogoutIfRemoved();
+        return;
+      }
       pageTeam(document.getElementById("nav-team"));
     }
   });
