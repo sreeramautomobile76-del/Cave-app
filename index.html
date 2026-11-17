@@ -67,7 +67,7 @@ input:focus,select:focus,textarea:focus{border-color:#1670e8}
 .items-box{margin:8px 0 14px}
 .order-card-click{cursor:pointer;user-select:none;-webkit-user-select:none}
 
-.item-check-row{display:flex;align-items:center;justify-content:space-between;padding:12px 8px;border-bottom:1px solid #f0f4f9;transition:all 0.3s ease;user-select:none;-webkit-user-select:none;border-radius:8px}
+.item-check-row{position:relative;display:flex;align-items:center;justify-content:space-between;padding:12px 8px 16px;border-bottom:1px solid #f0f4f9;transition:all 0.3s ease;user-select:none;-webkit-user-select:none;border-radius:8px}
 .item-check-row.selected-item{background:#e6f0ff !important;border:1px solid #1670e8}
 .item-check-row.delete-mode-item{background:#fff5f5 !important;border:1px solid #ee5d50}
 .item-check-row:last-child{border-bottom:none}
@@ -230,8 +230,14 @@ mark.hl{background:#fff2a8;color:inherit;border-radius:3px;padding:0 1px}
 .packed-stamp.sm.pop{animation:stampInC .45s cubic-bezier(.2,1.4,.4,1) both}
 @keyframes stampInC{0%{transform:translate(-50%,-50%) rotate(-13deg) scale(2.4);opacity:0}60%{opacity:1}100%{transform:translate(-50%,-50%) rotate(-13deg) scale(1);opacity:.88}}
 @keyframes stampIn{0%{transform:rotate(-13deg) scale(2.4);opacity:0}60%{opacity:1}100%{transform:rotate(-13deg) scale(1);opacity:.88}}
-.item-comment{margin-top:3px;font-size:12px;font-weight:500;color:#4a5568;background:#f1f5f9;border-left:3px solid #1670e8;border-radius:6px;padding:3px 7px;white-space:pre-wrap;overflow-wrap:anywhere}
-.item-comment span{color:#718096;font-size:10.5px;font-weight:600}
+.item-comment{margin-top:2px;font-size:11.5px;font-weight:500;color:#71809a;background:transparent;border:0;border-radius:0;padding:0;white-space:pre-wrap;overflow-wrap:anywhere}
+.item-comment span{color:#9aa6bd;font-size:10.5px;font-weight:600}
+.item-meta-row{position:absolute;right:8px;bottom:4px;display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:5px;pointer-events:none;z-index:2}
+.item-meta-new,.item-meta-edited{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.3px;line-height:1;padding:0;border:0;background:transparent;opacity:.55}
+.item-meta-new{color:var(--cave-accent,#1670e8)}
+.item-meta-edited{color:#b7791f;pointer-events:auto;cursor:pointer}
+html.dark .item-meta-new{color:#77aaee;opacity:.5;background:transparent;border:0}
+html.dark .item-meta-edited{color:#e9bd7c;opacity:.55;background:transparent;border:0}
 .modal.add-items-modal{display:flex;flex-direction:column;max-height:88dvh;overflow:hidden}
 .modal.add-items-modal .items-box{flex:1 1 auto;min-height:56px;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
 .modal.add-items-modal>*{flex-shrink:0}
@@ -447,8 +453,8 @@ html.dark .search-more{color:#9fb0cc !important}
 html.dark mark.hl{background:#3a3522 !important}
 html.dark #selectionActions{background:#1a2336 !important;border-bottom:1px solid #2c3850 !important}
 html.dark .packed-stamp{color:#82e39b !important;border:3px solid #479e5e !important;background:rgba(26,35,54,0.35) !important}
-html.dark .item-comment{color:#e3e9f5 !important;background:#202b42 !important;border-left:3px solid #3a6bac !important}
-html.dark .item-comment span{color:#9fb0cc !important}
+html.dark .item-comment{color:#9fb0cc !important;background:transparent !important;border:0 !important}
+html.dark .item-comment span{color:#7d8ca8 !important}
 html.dark #stickyCust{background:rgba(26,35,54,0.97) !important;border-bottom:1px solid #2c3850 !important}
 html.dark #stickyViewers{background:rgba(26,35,54,0.97) !important;border-bottom:1px solid #2c3850 !important;color:#85e0a8 !important}
 html.dark #stickyCustTxt{color:#e3e9f5 !important}
@@ -2054,6 +2060,27 @@ function markSelectedUrgent(orderId){
   showToast(allUrgent ? "Urgent mark removed" : "Marked urgent");
 }
 function urgentTag(item){ return (item && item.urgent && !item.completed) ? ' <span class="urgent-badge">URGENT</span>' : ''; }
+function fmtItemTime(ts){
+  try {
+    var d = new Date(ts);
+    if(isNaN(d.getTime())) return "";
+    return d.toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" }).toUpperCase();
+  } catch(e){ return ""; }
+}
+function itemMetaHtml(item, orderId){
+  if(!item) return "";
+  var bits = [];
+  if(item.isNew && item.addedAt){
+    bits.push('<span class="item-meta-new">NEW · ' + esc(fmtItemTime(item.addedAt)) + '</span>');
+  } else if(item.isNew){
+    bits.push('<span class="item-meta-new">NEW</span>');
+  }
+  if(item.edited){
+    bits.push('<span class="item-meta-edited" onclick="event.stopPropagation(); showItemEditHistory(\'' + esc(orderId) + '\',\'' + esc(item.id) + '\')">EDITED</span>');
+  }
+  if(!bits.length) return "";
+  return '<div class="item-meta-row">' + bits.join("") + '</div>';
+}
 
 function it_u(o){ return (o.items || []).filter(function(x){ return x && x.urgent && !x.completed && !x.noStock; }).length; }
 
@@ -2175,7 +2202,7 @@ function searchHitsHtml(o, q){
   var shown = hits.slice(0, 8);
   var html = '<div class="search-hits">' + shown.map(function(i){
     var ic = i.completed ? "\u2705" : (i.noStock ? "\uD83D\uDEAB" : (i.ordered ? "\uD83D\uDCE6" : "\u23F3"));
-    var cm = i.comment ? '<div class="item-comment">\uD83D\uDCAC ' + hlText(i.comment, q) + '</div>' : '';
+    var cm = i.comment ? '<div class="item-comment">' + hlText(i.comment, q) + '</div>' : '';
     return '<div class="search-hit"><div class="hit-name">' + ic + ' ' + hlText(i.name, q) + cm + '</div><div class="hit-qty">' + (i.qty || 1) + ' ' + esc(i.unit || "PCS") + '</div></div>';
   }).join("");
   if(hits.length > shown.length) html += '<div class="search-more">+' + (hits.length - shown.length) + ' more matching items</div>';
@@ -2633,22 +2660,22 @@ function openOrderDetail(orderId){
 
   var pendingHtml = pendingItems.length ? pendingItems.map(function(item){
     let circleAction = 'onclick="handleCircleClick(\'' + esc(o.id) + '\', \'' + esc(item.id) + '\', this, event)"';
-    return '<div class="item-check-row' + ((item.urgent && !item.completed) ? ' urgent-row' : '') + '" id="row-' + esc(item.id) + '"><div class="item-left"><span class="circle-btn" ' + circleAction + '></span><div style="min-width:0"><div>' + esc(item.name) + urgentTag(item) + '</div>' + commentHtml(item) + '</div></div><span class="item-qty-tag">' + (item.qty || 1) + ' ' + esc(item.unit || 'PCS') + '</span></div>';
+    return '<div class="item-check-row' + ((item.urgent && !item.completed) ? ' urgent-row' : '') + '" id="row-' + esc(item.id) + '"><div class="item-left"><span class="circle-btn" ' + circleAction + '></span><div style="min-width:0"><div>' + esc(item.name) + urgentTag(item) + '</div>' + itemMetaHtml(item, o.id) + commentHtml(item) + '</div></div><span class="item-qty-tag">' + (item.qty || 1) + ' ' + esc(item.unit || 'PCS') + '</span></div>';
   }).join('') : '<div style="padding:12px;color:#71809a;font-size:13px">No pending items</div>';
 
   var orderedHtml = orderedItems.length ? orderedItems.map(function(item){
     let circleAction = 'onclick="handleCircleClick(\'' + esc(o.id) + '\', \'' + esc(item.id) + '\', this, event)"';
-    return '<div class="item-check-row' + ((item.urgent && !item.completed) ? ' urgent-row' : '') + '" id="row-' + esc(item.id) + '" style="background:#fffdf5"><div class="item-left"><span class="circle-btn" style="border-color:#d69e2e;color:#d69e2e;font-size:10px;line-height:22px;text-align:center" ' + circleAction + '>📦</span><div style="min-width:0"><div>' + esc(item.name) + urgentTag(item) + '</div>' + commentHtml(item) + '</div></div><span class="item-qty-tag" style="color:#b7791f">' + (item.qty || 1) + ' ' + esc(item.unit || 'PCS') + '</span></div>';
+    return '<div class="item-check-row' + ((item.urgent && !item.completed) ? ' urgent-row' : '') + '" id="row-' + esc(item.id) + '" style="background:#fffdf5"><div class="item-left"><span class="circle-btn" style="border-color:#d69e2e;color:#d69e2e;font-size:10px;line-height:22px;text-align:center" ' + circleAction + '>📦</span><div style="min-width:0"><div>' + esc(item.name) + urgentTag(item) + '</div>' + itemMetaHtml(item, o.id) + commentHtml(item) + '</div></div><span class="item-qty-tag" style="color:#b7791f">' + (item.qty || 1) + ' ' + esc(item.unit || 'PCS') + '</span></div>';
   }).join('') : '<div style="padding:12px;color:#71809a;font-size:13px">No ordered items</div>';
 
   var noStockHtml = noStockItems.length ? noStockItems.map(function(item){
-    return '<div class="item-check-row' + ((item.urgent && !item.completed) ? ' urgent-row' : '') + '" id="row-' + esc(item.id) + '"><div class="item-left"><span class="circle-btn" style="border-color:#e53e3e;color:#e53e3e;font-size:10px;line-height:22px;text-align:center" onclick="toggleNoStockItem(\'' + esc(o.id) + '\', \'' + esc(item.id) + '\')">×</span><div style="min-width:0"><div>' + esc(item.name) + urgentTag(item) + '</div>' + commentHtml(item) + '</div></div><span class="item-qty-tag">' + (item.qty || 1) + ' ' + esc(item.unit || 'PCS') + '</span></div>';
+    return '<div class="item-check-row' + ((item.urgent && !item.completed) ? ' urgent-row' : '') + '" id="row-' + esc(item.id) + '"><div class="item-left"><span class="circle-btn" style="border-color:#e53e3e;color:#e53e3e;font-size:10px;line-height:22px;text-align:center" onclick="toggleNoStockItem(\'' + esc(o.id) + '\', \'' + esc(item.id) + '\')">×</span><div style="min-width:0"><div>' + esc(item.name) + urgentTag(item) + '</div>' + itemMetaHtml(item, o.id) + commentHtml(item) + '</div></div><span class="item-qty-tag">' + (item.qty || 1) + ' ' + esc(item.unit || 'PCS') + '</span></div>';
   }).join('') : '<div style="padding:12px;color:#71809a;font-size:13px">No items marked No Stock</div>';
 
   var completedHtml = completedItems.length ? completedItems.map(function(item){
     let circleAction = 'onclick="handleCircleClick(\'' + esc(o.id) + '\', \'' + esc(item.id) + '\', this, event)"';
     let pickedByText = item.pickedBy ? '<div class="item-picked-tag">Picked by ' + esc(item.pickedBy) + '</div>' : '';
-    return '<div class="item-check-row' + ((item.urgent && !item.completed) ? ' urgent-row' : '') + '" id="row-' + esc(item.id) + '"><div class="item-left"><span class="circle-btn checked" ' + circleAction + '>✓</span><div><div>' + esc(item.name) + urgentTag(item) + '</div>' + pickedByText + commentHtml(item) + '</div></div><span class="item-qty-tag">' + (item.qty || 1) + ' ' + esc(item.unit || 'PCS') + '</span></div>';
+    return '<div class="item-check-row' + ((item.urgent && !item.completed) ? ' urgent-row' : '') + '" id="row-' + esc(item.id) + '"><div class="item-left"><span class="circle-btn checked" ' + circleAction + '>✓</span><div><div>' + esc(item.name) + urgentTag(item) + '</div>' + itemMetaHtml(item, o.id) + pickedByText + commentHtml(item) + '</div></div><span class="item-qty-tag">' + (item.qty || 1) + ' ' + esc(item.unit || 'PCS') + '</span></div>';
   }).join('') : '<div style="padding:12px;color:#71809a;font-size:13px">No completed items yet</div>';
 
   let adoptBtnHtml = o.adoptedBy ? 
@@ -2675,6 +2702,7 @@ function openOrderDetail(orderId){
           '<button class="btn danger" style="margin:0;padding:6px 10px;width:auto;font-size:12px" onclick="markSelectedNoStock(\'' + esc(o.id) + '\')">🚫 No Stock</button>' +
           '<button class="btn secondary" style="margin:0;padding:6px 10px;width:auto;font-size:12px;color:#c53030;border-color:#c53030" onclick="markSelectedUrgent(\'' + esc(o.id) + '\')">🔴 Urgent</button>' +
           '<button class="btn secondary" style="margin:0;padding:6px 10px;width:auto;font-size:12px" onclick="openCommentModal(\'' + esc(o.id) + '\')">💬 Comment</button>' +
+          '<button class="btn secondary" style="margin:0;padding:6px 10px;width:auto;font-size:12px" onclick="openEditSelectedItem(\'' + esc(o.id) + '\')">✏ Edit</button>' +
         '</div>' +
         '<div id="deleteItemsActionHeader" style="display:none;gap:6px">' +
           '<button class="btn danger" style="margin:0;padding:6px 12px;width:auto;font-size:12px" onclick="confirmDeleteSelectedItems(\'' + esc(o.id) + '\')">🗑 Delete Selected (<span id="delSelCount">0</span>)</button>' +
@@ -2766,6 +2794,7 @@ function actText(e){
     case "received": return '\uD83D\uDCE5 ' + w + ' recorded goods from ' + (e.c ? esc(e.c) : 'a party') + ' (' + esc(e.i || '') + ')';
     case "order_new": return '\uD83C\uDD95 ' + w + ' created order' + c + (e.i ? ' \u00B7 ' + esc(e.i) + ' items' : '');
     case "items_added": return '\u2795 ' + w + ' added ' + esc(e.i || "") + ' items' + c;
+    case "item_edited": return '\u270F ' + w + ' edited item ' + it + c;
   }
   return esc(e.y || "") + ' ' + w + c;
 }
@@ -3428,7 +3457,106 @@ function togglePacked(orderId, fromList){
 
 function commentHtml(item){
   if(!item || !item.comment) return "";
-  return '<div class="item-comment">\uD83D\uDCAC ' + esc(item.comment) + (item.commentBy ? ' <span>\u2014 ' + esc(item.commentBy) + '</span>' : '') + '</div>';
+  return '<div class="item-comment">' + esc(item.comment) + (item.commentBy ? ' <span>\u2014 ' + esc(item.commentBy) + '</span>' : '') + '</div>';
+}
+
+function openEditSelectedItem(orderId){
+  closeOrderDetailMenu();
+  var ids = Array.from(selectedItemsSet);
+  if(ids.length !== 1){ showToast("Select exactly 1 item to edit (press and hold)"); return; }
+  openEditItemModal(orderId, ids[0]);
+}
+
+function openEditItemModal(orderId, itemId){
+  var b = current(), o = b && b.orders.find(function(x){ return x && x.id === orderId; });
+  if(!o) return;
+  var item = (o.items || []).find(function(it){ return it && it.id === itemId; });
+  if(!item) return;
+  var modal = document.createElement("div");
+  modal.className = "modal-overlay";
+  modal.innerHTML =
+    '<div class="modal">' +
+      '<h3 style="margin-bottom:10px">✏ Edit Item</h3>' +
+      '<label class="small muted">Item name</label>' +
+      '<input id="editItemName" class="uppercase-input" style="margin:4px 0 10px">' +
+      '<div style="display:flex;gap:8px">' +
+        '<div style="flex:1"><label class="small muted">Qty</label><input id="editItemQty" type="text" inputmode="numeric" style="margin:4px 0 10px"></div>' +
+        '<div style="flex:1"><label class="small muted">Unit</label><input id="editItemUnit" class="uppercase-input" style="margin:4px 0 10px"></div>' +
+      '</div>' +
+      '<div style="display:flex;gap:10px;margin-top:6px">' +
+        '<button class="btn secondary" style="margin:0;flex:1" onclick="this.closest(\'.modal-overlay\').remove()">Cancel</button>' +
+        '<button class="btn" style="margin:0;flex:1" id="saveEditItemBtn">Save</button>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(modal);
+  document.getElementById("editItemName").value = item.name || "";
+  document.getElementById("editItemQty").value = item.qty || 1;
+  document.getElementById("editItemUnit").value = item.unit || "PCS";
+  setTimeout(function(){ try{ document.getElementById("editItemName").focus(); }catch(e){} }, 60);
+  document.getElementById("saveEditItemBtn").onclick = function(){
+    var name = document.getElementById("editItemName").value.trim().toUpperCase();
+    var qty = Number(document.getElementById("editItemQty").value);
+    var unit = (document.getElementById("editItemUnit").value.trim().toUpperCase() || "PCS");
+    if(!name){ alert("Please enter item name."); return; }
+    if(!Number.isFinite(qty) || qty <= 0){ alert("Please enter a valid quantity."); return; }
+    var same = (String(item.name || "") === name) && (Number(item.qty || 0) === qty) && (String(item.unit || "PCS") === unit);
+    if(same){ modal.remove(); return; }
+    var me = (typeof getCurrentMember === "function" && getCurrentMember()) || null;
+    var who = (me && me.name) || data.currentUser || "Member";
+    var from = { name: item.name || "", qty: item.qty || 1, unit: item.unit || "PCS" };
+    var to = { name: name, qty: qty, unit: unit };
+    if(!Array.isArray(item.editHistory)) item.editHistory = [];
+    item.editHistory.push({ at: Date.now(), by: who, from: from, to: to });
+    item.name = name;
+    item.qty = qty;
+    item.unit = unit;
+    item.edited = true;
+    item.editedAt = Date.now();
+    item.editedBy = who;
+    item.updatedAt = Date.now();
+    try { logAct("item_edited", o, name); } catch(e){}
+    save();
+    modal.remove();
+    selectedItemsSet.clear();
+    openOrderDetail(orderId);
+    showToast("Item updated");
+  };
+}
+
+function showItemEditHistory(orderId, itemId){
+  var b = current(), o = b && b.orders.find(function(x){ return x && x.id === orderId; });
+  if(!o) return;
+  var item = (o.items || []).find(function(it){ return it && it.id === itemId; });
+  if(!item) return;
+  var hist = Array.isArray(item.editHistory) ? item.editHistory.slice().reverse() : [];
+  var body = "";
+  if(!hist.length){
+    body = '<div class="muted small">No edit details saved for this item.</div>';
+  } else {
+    body = hist.map(function(h){
+      var when = "";
+      try {
+        when = new Date(h.at).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
+      } catch(e){}
+      var fromTxt = esc((h.from && h.from.name) || "") + " · " + esc(String((h.from && h.from.qty) || 1)) + " " + esc((h.from && h.from.unit) || "PCS");
+      var toTxt = esc((h.to && h.to.name) || "") + " · " + esc(String((h.to && h.to.qty) || 1)) + " " + esc((h.to && h.to.unit) || "PCS");
+      return '<div style="padding:10px 0;border-bottom:1px solid #edf2f7">' +
+        '<div class="small muted" style="margin-bottom:4px">' + esc(when) + (h.by ? ' · ' + esc(h.by) : '') + '</div>' +
+        '<div style="font-size:13px"><span class="muted">Before:</span> <b>' + fromTxt + '</b></div>' +
+        '<div style="font-size:13px;margin-top:2px"><span class="muted">After:</span> <b>' + toTxt + '</b></div>' +
+      '</div>';
+    }).join("");
+  }
+  var modal = document.createElement("div");
+  modal.className = "modal-overlay";
+  modal.innerHTML =
+    '<div class="modal" style="max-height:80dvh;overflow-y:auto">' +
+      '<h3 style="margin-bottom:6px">✏ Edit History</h3>' +
+      '<p class="muted small" style="margin-bottom:10px">' + esc(item.name || "Item") + '</p>' +
+      body +
+      '<button class="btn" style="margin-top:14px;background:#71809a" onclick="this.closest(\'.modal-overlay\').remove()">Close</button>' +
+    '</div>';
+  document.body.appendChild(modal);
 }
 
 function openCommentModal(orderId){
@@ -3492,6 +3620,7 @@ function toggleOrderDetailMenu(e, orderId) {
     (canPackOrder() ? '<div class="menu-item" style="color:#d32f2f" onclick="toggleBilled(\'' + esc(orderId) + '\'); closeOrderDetailMenu();">' + (((current().orders.find(function(x){ return x && x.id === orderId; }) || {}).billed) ? '↩ Remove Billed Mark' : '🧾 Mark as Billed') + '</div>' : '') +
     (canPackOrder() ? '<div class="menu-item" style="color:#1f8a3b" onclick="togglePacked(\'' + esc(orderId) + '\'); closeOrderDetailMenu();">' + (((current().orders.find(function(x){ return x && x.id === orderId; }) || {}).packed) ? '↩ Remove Packed Mark' : '📦 Mark as Packed') + '</div>' : '') +
     (selectedItemsSet.size > 0 ? '<div class="menu-item" onclick="openCommentModal(\'' + esc(orderId) + '\')">💬 Comment (' + selectedItemsSet.size + ')</div>' : '') +
+    (selectedItemsSet.size === 1 ? '<div class="menu-item" onclick="openEditSelectedItem(\'' + esc(orderId) + '\'); closeOrderDetailMenu();">✏ Edit Item</div>' : '') +
     '<div class="menu-item" style="color:#ee5d50" onclick="startDeleteItemsMode(\'' + esc(orderId) + '\'); closeOrderDetailMenu();">🗑️ Delete Items</div>' +
     '<div class="menu-item" onclick="showDeletedItemsModal(\'' + esc(orderId) + '\'); closeOrderDetailMenu();">👁 Show Deleted Items</div>';
 
@@ -3675,17 +3804,22 @@ function addItemsToExistingOrderModal(orderId){
     let rows = Array.from(document.querySelectorAll("#modalItemBox .item-row"));
     let newItems = rows.map(r => {
       var extracted = extractUrgentFromName(r.querySelector(".item-name").value.trim().toUpperCase());
+      var meAdd = (typeof getCurrentMember === "function" && getCurrentMember()) || null;
+      var whoAdd = (meAdd && meAdd.name) || data.currentUser || "Member";
       var item = {
         id: genId("ITM"),
         name: extracted.name,
         qty: Number(r.querySelector(".item-qty").value) || 1,
         unit: (r.querySelector(".item-unit").value || "PCS").toUpperCase(),
         completed: false,
-        ordered: false
+        ordered: false,
+        isNew: true,
+        addedAt: Date.now(),
+        addedBy: whoAdd
       };
       if(extracted.urgent || r.dataset.urgent === "1"){
         item.urgent = true;
-        item.urgentBy = ((typeof getCurrentMember === "function" && getCurrentMember()) || {}).name || data.currentUser || "Member";
+        item.urgentBy = whoAdd;
       }
       return item;
     }).filter(x => x.name);
